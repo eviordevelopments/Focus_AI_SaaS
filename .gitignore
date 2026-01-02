@@ -1,0 +1,13 @@
+# Dependencies
+node_modules
+.DS_Store
+dist
+build
+.env
+.idea
+.vscode
+*.log
+
+# Build output
+packages/*/dist
+packages/*/build

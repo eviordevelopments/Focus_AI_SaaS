@@ -1,0 +1,10 @@
+directories:
+  output: dist_electron
+  buildResources: build
+appId: com.focusai.app
+productName: Focus AI
+electronVersion: 28.1.0
+files:
+  - filter:
+      - dist/**/*
+      - dist-electron/**/*

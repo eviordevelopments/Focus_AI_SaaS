@@ -1,0 +1,12 @@
+{
+  "name": "focus-ai-saas",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w @focus-ai/server",
+    "dev:desktop": "npm run dev -w @focus-ai/desktop",
+    "build": "npm run build --workspaces --if-present"
+  }
+}

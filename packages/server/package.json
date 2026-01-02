@@ -1,0 +1,30 @@
+{
+    "name": "@focus-ai/server",
+    "version": "0.1.0",
+    "main": "dist/src/index.js",
+    "scripts": {
+        "dev": "npx ts-node-dev --respawn --transpile-only src/index.ts",
+        "build": "npx -p typescript tsc",
+        "start": "node dist/src/index.js",
+        "migrate": "npx knex migrate:latest",
+        "seed": "npx knex seed:run"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "date-fns": "^4.1.0",
+        "dotenv": "^16.3.1",
+        "express": "^4.18.2",
+        "knex": "^3.1.0",
+        "openai": "^6.15.0",
+        "pg": "^8.11.3",
+        "react-circular-progressbar": "^2.2.0",
+        "sqlite3": "^5.1.7"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.17",
+        "@types/express": "^4.17.21",
+        "@types/node": "^20.10.6",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.3.3"
+    }
+}
