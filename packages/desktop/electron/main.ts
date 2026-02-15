@@ -10,13 +10,17 @@ function startBackend() {
 
     if (isDev) {
         console.log('Starting backend in development mode...');
-        // In dev, we can run the root script which handles ts-node-dev
+        // Correct path to root from packages/desktop/dist-electron/main.js
+        const rootPath = path.join(__dirname, '..', '..', '..');
+        console.log('Project root detected at:', rootPath);
+
         serverProcess = spawn('npm', ['run', 'dev:server'], {
-            cwd: path.join(process.cwd(), '../..'), // Go to root from packages/desktop
+            cwd: rootPath,
             shell: true,
             stdio: 'inherit'
         });
     } else {
+
         const serverPath = path.join(process.resourcesPath, 'server/dist/src/index.js');
         console.log('Starting backend in production mode at:', serverPath);
         serverProcess = spawn('node', [serverPath], {

@@ -32,19 +32,34 @@ router.post('/register', async (req, res) => {
     }
 });
 
+import fs from 'fs';
+import path from 'path';
+
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        let { email, password } = req.body;
+        // Trim and normalize email for robustness
+        email = email?.trim();
+        password = password?.trim();
 
-        const user = await db('users').where('email', email).first();
+        const logFile = path.join(process.cwd(), 'login_debug.log');
+        const logMsg = `[${new Date().toISOString()}] Login attempt: email=[${email}], password=[${password}]\n`;
+        fs.appendFileSync(logFile, logMsg);
+
+        // Case-insensitive search for email
+        const user = await db('users').whereRaw('LOWER(email) = LOWER(?)', [email]).first();
+        const userLog = `[${new Date().toISOString()}] User from DB: ${user ? JSON.stringify({ ...user, password: '***' }) : 'NOT FOUND'}\n`;
+        fs.appendFileSync(logFile, userLog);
 
         if (!user || user.password !== password) {
+            const failLog = `[${new Date().toISOString()}] Login failed: ${!user ? 'User not found' : `Password mismatch`}\n`;
+            fs.appendFileSync(logFile, failLog);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // Return user info (no JWT for simple MVP, client stores user state)
         const { password: _, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
+
 
     } catch (error) {
         console.error(error);
