@@ -64,9 +64,11 @@ export interface Workflow {
 export const apiSlice = createApi({
     reducerPath: 'api',
     baseQuery: fetchBaseQuery({
-        baseUrl: (import.meta.env.VITE_API_URL || 'http://localhost:4000') + '/api',
+        baseUrl: (import.meta.env.VITE_API_URL || '') + '/api',
     }),
     tagTypes: ['Task', 'Area', 'Session', 'Health', 'Learning', 'Log', 'System', 'Review', 'Identity', 'Streak', 'Achievement', 'Burnout', 'Habit', 'Eisenhower', 'Deck', 'Project', 'Resource', 'Reference', 'User', 'Workflow', 'WorkflowRun', 'Tree', 'Asset'],
+
+
     endpoints: (builder) => ({
         // ... (existing endpoints)
         // FOCUS AI - Systems

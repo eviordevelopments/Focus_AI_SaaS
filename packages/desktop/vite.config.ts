@@ -14,4 +14,13 @@ export default defineConfig({
             },
         }),
     ].filter(Boolean),
+    server: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:4000',
+                changeOrigin: true,
+            }
+        }
+    }
 })
+

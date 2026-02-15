@@ -1,5 +1,36 @@
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
+import { spawn, ChildProcess } from 'child_process';
+
+
+let serverProcess: ChildProcess | null = null;
+
+function startBackend() {
+    const isDev = !app.isPackaged;
+
+    if (isDev) {
+        console.log('Starting backend in development mode...');
+        // In dev, we can run the root script which handles ts-node-dev
+        serverProcess = spawn('npm', ['run', 'dev:server'], {
+            cwd: path.join(process.cwd(), '../..'), // Go to root from packages/desktop
+            shell: true,
+            stdio: 'inherit'
+        });
+    } else {
+        const serverPath = path.join(process.resourcesPath, 'server/dist/src/index.js');
+        console.log('Starting backend in production mode at:', serverPath);
+        serverProcess = spawn('node', [serverPath], {
+            env: { ...process.env, PORT: '4000', NODE_ENV: 'production' },
+            stdio: 'inherit'
+        });
+    }
+
+    if (serverProcess) {
+        serverProcess.on('error', (err) => {
+            console.error('Failed to start backend server:', err);
+        });
+    }
+}
 
 
 function createWindow() {
@@ -28,15 +59,7 @@ function createWindow() {
         win.loadURL(process.env.VITE_DEV_SERVER_URL)
     } else {
         // Fallback or Production
-        // If we are in dev (inferred by absence of dist file or explicit check), try localhost:5173
-        // We can try to load the local URL if the file doesn't exist
         const distIndex = path.join(__dirname, '../dist/index.html');
-
-        // Simple heuristic: If we can't find the dist file, or if we just want to force dev:
-        // win.loadURL('http://localhost:5173'); 
-
-        // Better: Try to load from localhost:5173 first if we suspect dev mode.
-        // Since the user is running dev:desktop, we expect the server on 5173.
         console.log('VITE_DEV_SERVER_URL not set. Attempting fallback to http://localhost:5173');
         win.loadURL('http://localhost:5173').catch(() => {
             console.log('Localhost failed, loading file:', distIndex);
@@ -46,6 +69,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+    startBackend();
     createWindow()
 
     app.on('activate', () => {
@@ -56,7 +80,11 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+    if (serverProcess) {
+        serverProcess.kill();
+    }
     if (process.platform !== 'darwin') {
         app.quit()
     }
 })
+
