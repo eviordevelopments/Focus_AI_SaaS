@@ -4,32 +4,45 @@ import {
     Target, Calendar, X, Rocket,
     CheckCircle2, Layers, Activity
 } from 'lucide-react';
-import { useCreateProjectMutation, Area } from '../../features/api/apiSlice';
+import { useCreateProjectMutation, useUpdateProjectMutation, Area } from '../../features/api/apiSlice';
 
 interface ProjectCreationFlowProps {
     onClose: () => void;
     lifeAreaId: string;
     areas: Area[];
+    editingId?: string;
+    initialData?: any;
 }
 
-export function ProjectCreationFlow({ onClose, lifeAreaId, areas }: ProjectCreationFlowProps) {
+export function ProjectCreationFlow({ onClose, lifeAreaId, areas, editingId, initialData }: ProjectCreationFlowProps) {
     const [createProject] = useCreateProjectMutation();
+    const [updateProject] = useUpdateProjectMutation(); // Need to add to apiSlice
     const area = areas.find(a => a.id === lifeAreaId);
 
     const [form, setForm] = useState({
-        name: '',
-        life_area_id: lifeAreaId,
-        status: 'active',
-        deadline: '',
-        progress: 0
+        name: initialData?.name || '',
+        life_area_id: initialData?.life_area_id || lifeAreaId,
+        status: initialData?.status || 'active',
+        deadline: initialData?.deadline ? initialData.deadline.split('T')[0] : '',
+        progress: initialData?.progress || 0
     });
 
     const handleSubmit = async () => {
         try {
-            await createProject({
-                ...form,
-                deadline: form.deadline ? new Date(form.deadline).toISOString() : null
-            }).unwrap();
+            if (editingId) {
+                await updateProject({
+                    id: editingId,
+                    updates: {
+                        ...form,
+                        deadline: form.deadline ? new Date(form.deadline).toISOString() : null
+                    }
+                }).unwrap();
+            } else {
+                await createProject({
+                    ...form,
+                    deadline: form.deadline ? new Date(form.deadline).toISOString() : null
+                }).unwrap();
+            }
             onClose();
         } catch (err) {
             console.error(err);
@@ -58,7 +71,7 @@ export function ProjectCreationFlow({ onClose, lifeAreaId, areas }: ProjectCreat
                             <div className="inline-flex p-3 bg-emerald-500/10 rounded-2xl text-emerald-400 mb-2">
                                 <Rocket size={24} />
                             </div>
-                            <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Launch Project</h2>
+                            <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{editingId ? 'Refine Mission' : 'Launch Project'}</h2>
                             <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase italic flex items-center gap-2">
                                 <Layers size={12} className="text-emerald-500" />
                                 Assigned to {area?.name || 'Unknown Area'}
@@ -127,7 +140,7 @@ export function ProjectCreationFlow({ onClose, lifeAreaId, areas }: ProjectCreat
                             disabled={!form.name}
                             className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black uppercase tracking-[0.2em] py-5 rounded-3xl shadow-xl shadow-emerald-900/40 disabled:opacity-30 transition-all text-xs flex items-center justify-center gap-2 active:scale-95"
                         >
-                            Launch Project
+                            {editingId ? 'Update Mission' : 'Launch Project'}
                             <CheckCircle2 size={16} />
                         </button>
                     </div>

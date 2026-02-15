@@ -5,48 +5,70 @@ import {
     Zap, Clock, Layers, Sparkles, Hash,
     CheckCircle2, Quote, Calendar as CalendarIcon
 } from 'lucide-react';
-import { useCreateHabitMutation, useGetSystemsQuery } from '../../features/api/apiSlice';
+import { useCreateHabitMutation, useUpdateHabitMutation, useGetSystemsQuery, useGetProjectsQuery } from '../../features/api/apiSlice';
 
 interface HabitCreationFlowProps {
     onClose: () => void;
     systemId?: string;
+    editingId?: string;
+    initialData?: any;
 }
 
-export function HabitCreationFlow({ onClose, systemId }: HabitCreationFlowProps) {
+export function HabitCreationFlow({ onClose, systemId, editingId, initialData }: HabitCreationFlowProps) {
     const [step, setStep] = useState(1);
     const [createHabit] = useCreateHabitMutation();
+    const [updateHabit] = useUpdateHabitMutation(); // Need to add to apiSlice
     const { data: systems = [] } = useGetSystemsQuery();
 
     const [form, setForm] = useState({
-        name: '',
-        identity_statement: '',
-        area_id: '',
-        system_id: systemId || '',
-        days_of_week: [0, 1, 2, 3, 4, 5, 6],
-        base_xp: 15,
-        estimated_duration_minutes: 10,
-        color_hex: '#6366f1',
-        icon_key: 'zap',
-        trigger: '',
-        action: '',
-        reward: '',
-        start_time: '',
-        end_time: ''
+        name: initialData?.name || '',
+        identity_statement: initialData?.identity_statement || '',
+        area_id: initialData?.area_id || '',
+        system_id: initialData?.system_id || systemId || '',
+        project_id: initialData?.project_id || '',
+        days_of_week: initialData?.days_of_week ? (typeof initialData.days_of_week === 'string' ? JSON.parse(initialData.days_of_week) : initialData.days_of_week) : [0, 1, 2, 3, 4, 5, 6],
+        base_xp: initialData?.base_xp || 15,
+        estimated_duration_minutes: initialData?.estimated_duration_minutes || 10,
+        color_hex: initialData?.color_hex || '#6366f1',
+        icon_key: initialData?.icon_key || 'zap',
+        trigger: initialData?.trigger || '',
+        action: initialData?.action || '',
+        reward: initialData?.reward || '',
+        start_time: initialData?.start_time || '',
+        end_time: initialData?.end_time || ''
     });
+
+    // Find the system to get its life_area_id
+    const currentSystemId = systemId || form.system_id;
+    const selectedSystem = systems.find((s: any) => s.id === currentSystemId);
+    const lifeAreaId = selectedSystem?.life_area_id;
+
+    const { data: projects = [] } = useGetProjectsQuery({ lifeAreaId }, { skip: !lifeAreaId });
 
     const handleNext = () => setStep(s => s + 1);
     const handleBack = () => setStep(s => s - 1);
 
     const handleSubmit = async () => {
         try {
-            await createHabit({
-                ...form,
-                habit_type: 'habit',
-                is_active: true
-            }).unwrap();
+            if (editingId) {
+                await updateHabit({
+                    id: editingId,
+                    updates: {
+                        ...form,
+                        habit_type: 'habit',
+                        is_active: true
+                    }
+                }).unwrap();
+            } else {
+                await createHabit({
+                    ...form,
+                    habit_type: 'habit',
+                    is_active: true
+                }).unwrap();
+            }
             onClose();
         } catch (err) {
-            console.error('Failed to create habit:', err);
+            console.error('Failed to create/update habit:', err);
         }
     };
 
@@ -100,7 +122,7 @@ export function HabitCreationFlow({ onClose, systemId }: HabitCreationFlowProps)
                                     <div className="inline-flex p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 mb-2">
                                         <Sparkles size={24} />
                                     </div>
-                                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Forge New Identity</h2>
+                                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{editingId ? 'Refine Protocol' : 'Forge New Identity'}</h2>
                                     <p className="text-gray-500 text-xs font-bold tracking-widest uppercase">Step 1: The Philosophical Foundation</p>
                                 </div>
 
@@ -150,6 +172,25 @@ export function HabitCreationFlow({ onClose, systemId }: HabitCreationFlowProps)
                                             placeholder="e.g. CORE: DEEP READING"
                                         />
                                     </div>
+
+                                    {lifeAreaId && projects.length > 0 && (
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] text-gray-500 uppercase font-black tracking-widest flex items-center gap-2">
+                                                <Target size={12} className="text-emerald-500" />
+                                                Linked Project (Optional)
+                                            </label>
+                                            <select
+                                                value={form.project_id}
+                                                onChange={e => setForm({ ...form, project_id: e.target.value })}
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all appearance-none"
+                                            >
+                                                <option value="">Standalone Protocol</option>
+                                                {projects.map((p: any) => (
+                                                    <option key={p.id} value={p.id} className="bg-[#1a1a1c]">{p.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <button
@@ -345,7 +386,7 @@ export function HabitCreationFlow({ onClose, systemId }: HabitCreationFlowProps)
                                         onClick={handleSubmit}
                                         className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-700 text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-xl shadow-indigo-900/40 active:scale-95 transition-all text-xs flex items-center justify-center gap-2"
                                     >
-                                        Initialize Protocol
+                                        {editingId ? 'Update Protocol' : 'Initialize Protocol'}
                                         <CheckCircle2 size={16} />
                                     </button>
                                 </div>

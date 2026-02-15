@@ -13,24 +13,38 @@ export interface XPResult {
     };
 }
 
-export async function calculateXPEarned(userId: string, systemId: string, effortLevel: number, habitId?: string): Promise<XPResult> {
-    const system = await db('focus_systems').where({ id: systemId }).first();
-    let streak = null;
+export async function calculateXPEarned(userId: string, systemId?: string, effortLevel: number = 3, habitId?: string, workflowId?: string, trx?: any): Promise<XPResult> {
+    const q = trx || db;
+    let baseXP = 25;
+    let difficulty = 'medium';
 
-    if (habitId) {
-        streak = await db('streaks').where({ user_id: userId, habit_id: habitId }).first();
-    } else {
-        streak = await db('streaks').where({ user_id: userId, system_id: systemId }).first();
+    if (systemId) {
+        const system = await q('focus_systems').where({ id: systemId }).first();
+        baseXP = system?.xp_base || 25;
+        difficulty = system?.difficulty || 'medium';
+    } else if (workflowId) {
+        const workflow = await q('workflows').where({ id: workflowId }).first();
+        baseXP = 50; // Workflows are generally higher value
+        difficulty = 'medium';
     }
 
-    let baseXP = system?.xp_base || 25;
+    let streak = null;
+
+    if (workflowId) {
+        streak = await q('streaks').where({ user_id: userId, workflow_id: workflowId }).first();
+    } else if (habitId) {
+        streak = await q('streaks').where({ user_id: userId, habit_id: habitId }).first();
+    } else if (systemId) {
+        streak = await q('streaks').where({ user_id: userId, system_id: systemId }).first();
+    }
+
     if (habitId) {
-        const habit = await db('habits').where({ id: habitId }).first();
+        const habit = await q('habits').where({ id: habitId }).first();
         baseXP = habit?.base_xp || 10;
     }
 
     // Multipliers
-    const diffMult = { easy: 1.0, medium: 1.5, hard: 2.0 }[system?.difficulty as string] || 1.5;
+    const diffMult = { easy: 1.0, medium: 1.5, hard: 2.0 }[difficulty as string] || 1.5;
     const streakMult = streak ? 1 + (Math.min(streak.current_streak, 30) * 0.1) : 1.0;
     const consistencyMult = effortLevel <= 2 ? 1.1 : 1.0; // Bonus for making it easy
 
@@ -54,39 +68,48 @@ export async function calculateXPEarned(userId: string, systemId: string, effort
     };
 }
 
-export async function updateStreak(userId: string, systemId: string, logDate: string, habitId?: string): Promise<any> {
-    const query = db('streaks').where({ user_id: userId });
-    if (habitId) query.where({ habit_id: habitId });
-    else query.where({ system_id: systemId });
+export async function updateStreak(userId: string, systemId?: string, logDate?: string, habitId?: string, workflowId?: string, trx?: any): Promise<any> {
+    const q = trx || db;
+    const resolvedDate = logDate || format(new Date(), 'yyyy-MM-dd');
+    const query = q('streaks').where({ user_id: userId });
+
+    if (workflowId) query.where({ workflow_id: workflowId });
+    else if (habitId) query.where({ habit_id: habitId });
+    else if (systemId) query.where({ system_id: systemId });
+    else return null;
 
     const streak = await query.first();
-    const today = parseISO(logDate);
+    const today = parseISO(resolvedDate);
 
     if (!streak) {
         const newStreak = {
             id: crypto.randomUUID(),
             user_id: userId,
-            system_id: habitId ? null : systemId,
+            system_id: (habitId || workflowId) ? null : systemId,
             habit_id: habitId || null,
+            workflow_id: workflowId || null,
             current_streak: 1,
             best_streak: 1,
-            last_completed_date: logDate,
+            last_completed_date: resolvedDate,
             freeze_count: 0
         };
-        await db('streaks').insert(newStreak);
+        await q('streaks').insert(newStreak);
         return { current: 1, action: 'start' };
     }
 
-    const lastDate = parseISO(streak.last_completed_date);
+    const lastDate = typeof streak.last_completed_date === 'string'
+        ? parseISO(streak.last_completed_date)
+        : streak.last_completed_date;
+
     const diff = differenceInDays(today, lastDate);
 
     if (diff === 1) {
         // Continue streak
         const newStreakCount = streak.current_streak + 1;
-        await db('streaks').where({ id: streak.id }).update({
+        await q('streaks').where({ id: streak.id }).update({
             current_streak: newStreakCount,
             best_streak: Math.max(streak.best_streak, newStreakCount),
-            last_completed_date: logDate
+            last_completed_date: resolvedDate
         });
         return { current: newStreakCount, action: 'continue' };
     } else if (diff === 0) {
@@ -96,7 +119,7 @@ export async function updateStreak(userId: string, systemId: string, logDate: st
         // Streak broken or grace day used?
         let graceApplied = false;
         if (habitId) {
-            const habit = await db('habits').where({ id: habitId }).first();
+            const habit = await q('habits').where({ id: habitId }).first();
             const allowedGap = (habit?.streak_protected_days || 0) + 1;
             if (diff <= allowedGap) {
                 graceApplied = true;
@@ -104,17 +127,17 @@ export async function updateStreak(userId: string, systemId: string, logDate: st
         }
 
         if (graceApplied || streak.freeze_count > 0) {
-            const updateObj: any = { last_completed_date: logDate };
+            const updateObj: any = { last_completed_date: resolvedDate };
             if (!graceApplied && streak.freeze_count > 0) {
                 updateObj.freeze_count = streak.freeze_count - 1;
             }
 
-            await db('streaks').where({ id: streak.id }).update(updateObj);
+            await q('streaks').where({ id: streak.id }).update(updateObj);
             return { current: streak.current_streak, action: graceApplied ? 'grace_applied' : 'freeze_applied' };
         } else {
-            await db('streaks').where({ id: streak.id }).update({
+            await q('streaks').where({ id: streak.id }).update({
                 current_streak: 1,
-                last_completed_date: logDate
+                last_completed_date: resolvedDate
             });
             return { current: 1, action: 'reset' };
         }

@@ -8,9 +8,10 @@ interface ProductivityWidgetProps {
     tasksCompleted: number;
     streak: number;
     dailyGoal: number; // minutes
+    fullHeight?: boolean;
 }
 
-export default function ProductivityWidget({ focusMinutes, tasksCompleted, streak, dailyGoal }: ProductivityWidgetProps) {
+export default function ProductivityWidget({ focusMinutes, tasksCompleted, streak, dailyGoal, fullHeight }: ProductivityWidgetProps) {
     const percentage = Math.min(100, Math.round((focusMinutes / dailyGoal) * 100));
 
     // Format minutes to H m
@@ -18,59 +19,62 @@ export default function ProductivityWidget({ focusMinutes, tasksCompleted, strea
     const mins = focusMinutes % 60;
 
     return (
-        <GlassCard>
-            <div className="flex justify-between items-start mb-4">
-                <h3 className="font-bold text-lg text-white">Productivity</h3>
-                <div className="flex items-center gap-1 text-amber-400 text-xs font-bold">
-                    <span className="text-lg">🔥</span> {streak} days
+        <GlassCard fullHeight={fullHeight}>
+            <div className="flex justify-between items-start mb-8">
+                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Productivity</h3>
+                <div className="flex items-center gap-2 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20 shadow-lg shadow-amber-500/5">
+                    <span className="text-sm">🔥</span>
+                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">{streak} days</span>
                 </div>
             </div>
 
-            <div className="flex items-center gap-6">
-                <div className="w-24 h-24 font-bold">
+            <div className="flex items-center gap-8">
+                <div className="w-28 h-28">
                     <CircularProgressbar
                         value={percentage}
                         text={`${percentage}%`}
+                        strokeWidth={10}
                         styles={buildStyles({
                             textSize: '24px',
-                            pathColor: '#8b5cf6', // Violet
+                            pathColor: '#6366f1', // Indigo 500
                             textColor: '#fff',
-                            trailColor: 'rgba(255,255,255,0.1)',
+                            trailColor: 'rgba(255,255,255,0.05)',
+                            strokeLinecap: 'round',
                         })}
                     />
                 </div>
 
-                <div className="space-y-4 flex-1">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                            <Clock size={16} />
+                <div className="space-y-6 flex-1">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/10">
+                            <Clock size={18} />
                         </div>
                         <div>
-                            <div className="text-xs text-gray-400">Focus Time</div>
-                            <div className="font-bold text-white">{hours}h {mins}m</div>
+                            <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Focus Time</div>
+                            <div className="text-lg font-black text-white tracking-tight">{hours}h {mins}m</div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                            <CheckCircle size={16} />
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/10">
+                            <CheckCircle size={18} />
                         </div>
                         <div>
-                            <div className="text-xs text-gray-400">Tasks Done</div>
-                            <div className="font-bold text-white">{tasksCompleted}</div>
+                            <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Tasks Done</div>
+                            <div className="text-lg font-black text-white tracking-tight">{tasksCompleted}</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="mt-6">
-                <div className="flex justify-between text-xs text-gray-400 mb-1">
+            <div className="mt-8 pt-6 border-t border-white/5">
+                <div className="flex justify-between text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-3">
                     <span>Daily Goal</span>
-                    <span>{focusMinutes}/{dailyGoal} min</span>
+                    <span className="text-white">{focusMinutes}/{dailyGoal} min</span>
                 </div>
-                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                     <div
-                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(99,102,241,0.3)]"
                         style={{ width: `${percentage}%` }}
                     />
                 </div>

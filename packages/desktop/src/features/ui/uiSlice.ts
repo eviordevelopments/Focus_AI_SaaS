@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UiState {
-    activeTab: 'dashboard' | 'calendar' | 'tasks' | 'deepwork' | 'health' | 'learning' | 'focus-ai' | 'eisenhower' | 'systems' | 'reviews' | 'planning' | 'areas' | 'quests' | 'habits';
+    activeTab: 'dashboard' | 'calendar' | 'tasks' | 'deepwork' | 'health' | 'learning' | 'focus-ai' | 'eisenhower' | 'systems' | 'reviews' | 'planning' | 'areas' | 'quests' | 'habits' | 'settings' | 'references';
     pendingSessionConfig?: { type: string; duration: number; taskId?: string };
 }
 

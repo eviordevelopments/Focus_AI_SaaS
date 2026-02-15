@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useGetAreasQuery, useCreateSystemMutation, useUpdateSystemMutation, useGetGamifiedIdentitiesQuery } from '../../features/api/apiSlice';
-import { Zap, Target, Save, Clock, Calendar as CalendarIcon, Info, X } from 'lucide-react';
+import { useGetAreasQuery, useCreateSystemMutation, useUpdateSystemMutation, useGetGamifiedIdentitiesQuery, useCreateHabitMutation } from '../../features/api/apiSlice';
+import { Zap, Target, Save, Clock, Calendar as CalendarIcon, Info, X, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface SystemCanvasProps {
@@ -15,6 +15,7 @@ export function SystemCanvas({ onSuccess, onCancel, initialLifeAreaId, existingS
     const { data: identities } = useGetGamifiedIdentitiesQuery();
     const [createSystem, { isLoading: isCreating }] = useCreateSystemMutation();
     const [updateSystem, { isLoading: isUpdating }] = useUpdateSystemMutation();
+    const [createHabit] = useCreateHabitMutation();
 
     const isLoading = isCreating || isUpdating;
     const isEditMode = !!existingSystem;
@@ -38,6 +39,35 @@ export function SystemCanvas({ onSuccess, onCancel, initialLifeAreaId, existingS
         location: '',
         focus_session: false
     });
+
+    // Habits that belong to this system
+    const [habits, setHabits] = useState<Array<{
+        name: string;
+        description: string;
+        base_xp: number;
+        start_time: string;
+        end_time: string;
+    }>>([]);
+
+    const addHabit = () => {
+        setHabits([...habits, {
+            name: '',
+            description: '',
+            base_xp: 25,
+            start_time: form.start_time || '',
+            end_time: form.end_time || ''
+        }]);
+    };
+
+    const removeHabit = (index: number) => {
+        setHabits(habits.filter((_, i) => i !== index));
+    };
+
+    const updateHabit = (index: number, field: string, value: any) => {
+        const updated = [...habits];
+        updated[index] = { ...updated[index], [field]: value };
+        setHabits(updated);
+    };
 
     // Populate form if editing existing system
     useEffect(() => {
@@ -87,8 +117,15 @@ export function SystemCanvas({ onSuccess, onCancel, initialLifeAreaId, existingS
                 ...form,
                 scheduled_days: form.scheduled_days,
                 // Ensure if identity_id is set, supports_identity takes the name if empty
-                supports_identity: form.supports_identity || identities?.find(i => i.id === form.identity_id)?.name || ''
+                supports_identity: form.supports_identity || identities?.find(i => i.id === form.identity_id)?.name || '',
+                // Sanitize optional fields to null if empty
+                start_time: form.start_time || null,
+                end_time: form.end_time || null,
+                link: form.link || null,
+                location: form.location || null
             };
+
+            let systemId: string;
 
             if (isEditMode && existingSystem) {
                 // Update existing system
@@ -96,9 +133,32 @@ export function SystemCanvas({ onSuccess, onCancel, initialLifeAreaId, existingS
                     id: existingSystem.id,
                     updates: payload
                 }).unwrap();
+                systemId = existingSystem.id;
             } else {
                 // Create new system
-                await createSystem(payload).unwrap();
+                const createdSystem = await createSystem(payload).unwrap();
+                systemId = createdSystem.id;
+
+                // Create all habits for this system
+                const daysMap: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+                const numericDays = form.scheduled_days.map((d: string) => daysMap[d] ?? -1).filter((d: number) => d !== -1);
+
+                for (const habit of habits) {
+                    if (habit.name) { // Only create if habit has a name
+                        await createHabit({
+                            system_id: systemId,
+                            name: habit.name,
+                            description: habit.description,
+                            days_of_week: numericDays,
+                            frequency: 'daily',
+                            habit_type: 'habit',
+                            is_active: true,
+                            base_xp: habit.base_xp,
+                            start_time: habit.start_time || null,
+                            end_time: habit.end_time || null
+                        }).unwrap();
+                    }
+                }
             }
 
             if (onSuccess) {
@@ -119,8 +179,14 @@ export function SystemCanvas({ onSuccess, onCancel, initialLifeAreaId, existingS
                         difficulty: 'medium',
                         duration_minutes: 30,
                         supports_identity: '',
-                        scheduled_days: ['Mon', 'Wed', 'Fri']
+                        scheduled_days: ['Mon', 'Wed', 'Fri'],
+                        start_time: '',
+                        end_time: '',
+                        link: '',
+                        location: '',
+                        focus_session: false
                     });
+                    setHabits([]);
                 }
             }
         } catch (err) {
@@ -130,7 +196,7 @@ export function SystemCanvas({ onSuccess, onCancel, initialLifeAreaId, existingS
     };
 
     return (
-        <div className="bg-[#0c0c0e] rounded-[3rem] shadow-2xl border border-white/10 p-8 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 relative my-8">
+        <div className="bg-white/5 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/20 p-8 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 relative my-8">
             {onCancel && (
                 <button
                     onClick={onCancel}
@@ -310,6 +376,174 @@ export function SystemCanvas({ onSuccess, onCancel, initialLifeAreaId, existingS
                         />
                     </section>
                 </div>
+
+                {/* Time Schedule & Location */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <section className="glass-panel p-6 rounded-3xl border border-white/10">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 block flex items-center gap-2">
+                            <Clock size={14} /> Time Schedule
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-[9px] text-gray-600 uppercase font-bold tracking-widest mb-2 block">Start Time</label>
+                                <input
+                                    type="time"
+                                    className="w-full bg-white/5 text-white p-3 rounded-2xl border border-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 [color-scheme:dark]"
+                                    value={form.start_time}
+                                    onChange={e => setForm({ ...form, start_time: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[9px] text-gray-600 uppercase font-bold tracking-widest mb-2 block">End Time</label>
+                                <input
+                                    type="time"
+                                    className="w-full bg-white/5 text-white p-3 rounded-2xl border border-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 [color-scheme:dark]"
+                                    value={form.end_time}
+                                    onChange={e => setForm({ ...form, end_time: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="glass-panel p-6 rounded-3xl border border-white/10">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 block">Location</label>
+                        <input
+                            type="text"
+                            className="w-full bg-white/5 text-white p-3 rounded-2xl border border-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                            placeholder="e.g. Home Office, Gym, Library"
+                            value={form.location}
+                            onChange={e => setForm({ ...form, location: e.target.value })}
+                        />
+                    </section>
+                </div>
+
+                {/* Link & Focus Session */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <section className="glass-panel p-6 rounded-3xl border border-white/10">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 block">Related Link</label>
+                        <input
+                            type="url"
+                            className="w-full bg-white/5 text-white p-3 rounded-2xl border border-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                            placeholder="https://..."
+                            value={form.link}
+                            onChange={e => setForm({ ...form, link: e.target.value })}
+                        />
+                        <p className="text-[9px] text-gray-600 mt-2 italic">Optional: Add a link to resources, docs, or tools</p>
+                    </section>
+
+                    <section className="glass-panel p-6 rounded-3xl border border-white/10 flex items-center justify-between">
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Focus Session</label>
+                            <p className="text-[9px] text-gray-600">Enable deep work timer</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setForm({ ...form, focus_session: !form.focus_session })}
+                            className={`relative w-14 h-8 rounded-full transition-colors ${form.focus_session ? 'bg-indigo-500' : 'bg-white/10'
+                                }`}
+                        >
+                            <div className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white transition-transform ${form.focus_session ? 'translate-x-6' : 'translate-x-0'
+                                }`} />
+                        </button>
+                    </section>
+                </div>
+
+                {/* Habits Section */}
+                <section className="glass-panel p-8 rounded-3xl border border-white/10">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 className="text-xl font-bold text-white mb-2">System Habits</h3>
+                            <p className="text-xs text-gray-500">Define the specific habits that make up this system</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={addHabit}
+                            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold text-xs flex items-center gap-2 transition-all"
+                        >
+                            <Plus size={16} />
+                            Add Habit
+                        </button>
+                    </div>
+
+                    {habits.length === 0 ? (
+                        <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-2xl">
+                            <p className="text-gray-500 text-sm mb-4">No habits added yet</p>
+                            <p className="text-xs text-gray-600">Click "Add Habit" to define the habits within this system</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {habits.map((habit, index) => (
+                                <div key={index} className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Habit #{index + 1}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeHabit(index)}
+                                            className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg text-rose-400 transition-colors"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[9px] text-gray-600 uppercase font-bold tracking-widest mb-2 block">Habit Name</label>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-white/5 text-white p-3 rounded-xl border border-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm"
+                                                placeholder="e.g. Morning Meditation"
+                                                value={habit.name}
+                                                onChange={e => updateHabit(index, 'name', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] text-gray-600 uppercase font-bold tracking-widest mb-2 block">XP Reward</label>
+                                            <input
+                                                type="number"
+                                                className="w-full bg-white/5 text-white p-3 rounded-xl border border-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm"
+                                                value={habit.base_xp}
+                                                onChange={e => updateHabit(index, 'base_xp', parseInt(e.target.value))}
+                                                min="5"
+                                                max="100"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[9px] text-gray-600 uppercase font-bold tracking-widest mb-2 block">Description</label>
+                                        <textarea
+                                            className="w-full bg-white/5 text-white p-3 rounded-xl border border-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm resize-none h-20"
+                                            placeholder="Describe this habit..."
+                                            value={habit.description}
+                                            onChange={e => updateHabit(index, 'description', e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[9px] text-gray-600 uppercase font-bold tracking-widest mb-2 block">Start Time</label>
+                                            <input
+                                                type="time"
+                                                className="w-full bg-white/5 text-white p-3 rounded-xl border border-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 [color-scheme:dark] text-sm"
+                                                value={habit.start_time}
+                                                onChange={e => updateHabit(index, 'start_time', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] text-gray-600 uppercase font-bold tracking-widest mb-2 block">End Time</label>
+                                            <input
+                                                type="time"
+                                                className="w-full bg-white/5 text-white p-3 rounded-xl border border-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 [color-scheme:dark] text-sm"
+                                                value={habit.end_time}
+                                                onChange={e => updateHabit(index, 'end_time', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
 
                 <div className="flex justify-end gap-4 pt-4">
                     <button

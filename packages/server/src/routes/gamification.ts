@@ -2,6 +2,7 @@ import express from 'express';
 import db from '../db';
 import crypto from 'crypto';
 import { calculateXPEarned, updateStreak, checkAchievements } from '../services/gamification';
+import { getDay, parseISO } from 'date-fns';
 
 const router = express.Router();
 
@@ -72,26 +73,60 @@ router.get('/dashboard', async (req: any, res) => {
         const streaks = await db('streaks').where({ user_id: userId });
         const achievements = await db('achievements').where({ user_id: userId });
 
-        // 3. Calculate Daily Compliance
+        // 3. Calculate Daily Compliance (Scheduled Habits Only)
+        const parsedDate = parseISO(today);
+        const dayOfWeek = getDay(parsedDate);
+
         // Fetch all habits for this user
-        const habits = await db('habits').where({ user_id: userId });
-        const habitIds = habits.map(h => h.id);
+        const habits = await db('habits').where({ user_id: userId, is_active: true });
+
+        const scheduledHabits = habits.filter(h => {
+            if (!h.days_of_week) return true;
+            try {
+                const days = typeof h.days_of_week === 'string' ? JSON.parse(h.days_of_week) : h.days_of_week;
+                return Array.isArray(days) && days.includes(dayOfWeek);
+            } catch (e) {
+                return true;
+            }
+        });
+
+        const scheduledHabitIds = scheduledHabits.map(h => h.id);
 
         // Fetch logs for today for these habits
         const todayLogs = await db('daily_logs')
-            .where({ user_id: userId, date: today })
-            .whereIn('habit_id', habitIds)
-            .where({ completed: true });
+            .where({ user_id: userId, date: today, completed: true })
+            .whereIn('habit_id', scheduledHabitIds);
 
-        const habitCount = habits.length;
+        const scheduledCount = scheduledHabits.length;
         const completedCount = todayLogs.length;
-        const dailyCompliance = habitCount > 0 ? (completedCount / habitCount) * 100 : 0;
+        const dailyCompliance = scheduledCount > 0 ? (completedCount / scheduledCount) * 100 : 0;
+
+        // 4. Calculate Average Progress (last 30 days)
+        const avgProgress = await db('day_summaries')
+            .where({ user_id: userId })
+            .where('date', '>=', db.raw("date('now', '-30 days')"))
+            .avg('completion_rate as avg')
+            .first();
+
+        // 5. Total Results (Total completed actions across all time)
+        const totalResults = await db('daily_logs')
+            .where({ user_id: userId, completed: true })
+            .count('id as count')
+            .first();
+
+        const xp = totalXP;
+        const level = Math.floor(Math.sqrt(xp / 100)) + 1;
+        const mastery = Math.floor(level / 10) + 1;
 
         res.json({
             totalXP,
+            level,
+            mastery,
             totalStreaks: streaks.length,
             achievementsCount: achievements.length,
             dailyCompliance: Math.round(dailyCompliance),
+            avgProgress: Math.round((avgProgress?.avg || 0) * 100),
+            totalResults: totalResults?.count || 0,
             identities
         });
     } catch (error) {

@@ -1,4 +1,4 @@
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, startOfDay } from 'date-fns';
 
 interface MonthViewProps {
     date: Date;
@@ -6,6 +6,12 @@ interface MonthViewProps {
     habits: any[];
     onDateClick?: (date: Date) => void;
 }
+
+const getSafeDate = (val: any) => {
+    if (!val) return null;
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+};
 
 export default function MonthView({ date, tasks, habits, onDateClick }: MonthViewProps) {
     const monthStart = startOfMonth(date);
@@ -38,8 +44,26 @@ export default function MonthView({ date, tasks, habits, onDateClick }: MonthVie
                     const dayStr = format(day, 'yyyy-MM-dd');
                     const dayOfWeek = day.getDay();
 
-                    // Filter Tasks
-                    const dayTasks = tasks.filter(t => t.due_date?.startsWith(dayStr));
+                    // Filter Tasks (including systems and recurring tasks)
+                    const dayTasks = tasks.filter(t => {
+                        const dayStrFull = format(day, 'yyyy-MM-dd');
+                        if (t.due_date?.startsWith(dayStrFull)) return true;
+                        if (t.start_time?.startsWith(dayStrFull)) return true;
+
+                        if (t.is_recurring && t.recurring_days) {
+                            try {
+                                const days = typeof t.recurring_days === 'string' ? JSON.parse(t.recurring_days) : t.recurring_days;
+                                const todayDay = format(day, 'EEE');
+                                if (Array.isArray(days) && days.includes(todayDay)) {
+                                    // Make sure it started before or on this day
+                                    const start = getSafeDate(t.start_time || t.created_at || '2000-01-01');
+                                    if (!start) return false;
+                                    return startOfDay(start) <= startOfDay(day);
+                                }
+                            } catch (e) { return false; }
+                        }
+                        return false;
+                    });
 
                     // Filter Scheduled Habits
                     const dayHabits = habits.filter(h => {
@@ -68,7 +92,11 @@ export default function MonthView({ date, tasks, habits, onDateClick }: MonthVie
                             color: t.color || '#10b981',
                             type: 'task',
                             isDone: t.status === 'done',
-                            time: t.start_time ? format(new Date(t.start_time), 'HH:mm') : null
+                            time: (() => {
+                                if (!t.start_time) return null;
+                                const d = new Date(t.start_time);
+                                return isNaN(d.getTime()) ? null : format(d, 'HH:mm');
+                            })()
                         }))
                     ].sort((a, b) => {
                         // Simple sort by time if available
@@ -103,13 +131,13 @@ export default function MonthView({ date, tasks, habits, onDateClick }: MonthVie
                                 {allItems.map((item, idx) => (
                                     <div
                                         key={idx}
-                                        className={`text-[9px] px-1.5 py-0.5 rounded truncate border-l-2 mb-0.5 flex items-center justify-between gap-1`}
+                                        className={`text-[9px] px-1.5 py-0.5 rounded truncate border-l-2 mb-0.5 flex items-center justify-between gap-1 shadow-sm`}
                                         style={{
-                                            backgroundColor: `${item.color}20`, // 10% opacity
+                                            backgroundColor: `${item.color}44`, // 25% opacity
                                             borderColor: item.color,
                                             color: item.isDone ? '#9ca3af' : 'white',
                                             textDecoration: item.isDone ? 'line-through' : 'none',
-                                            opacity: item.isDone ? 0.5 : 1
+                                            opacity: item.isDone ? 0.4 : 1
                                         }}
                                         title={`${item.title} ${item.time ? '@ ' + item.time : ''}`}
                                     >

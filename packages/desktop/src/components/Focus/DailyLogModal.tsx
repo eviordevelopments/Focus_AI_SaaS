@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useGetSystemsQuery, useCreateLogMutation, useGetLogsQuery } from '../../features/api/apiSlice';
+import { useGetSystemsQuery, useCreateBatchLogMutation, useGetLogsQuery } from '../../features/api/apiSlice';
 import { X, Check, Brain, Zap, Smile, MessageSquare, Flame } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -12,7 +12,7 @@ export function DailyLogModal({ isOpen, onClose }: DailyLogModalProps) {
     const today = format(new Date(), 'yyyy-MM-dd');
     const { data: systems } = useGetSystemsQuery();
     const { data: existingLogs } = useGetLogsQuery({ date: today });
-    const [createLog, { isLoading }] = useCreateLogMutation();
+    const [createBatchLog, { isLoading }] = useCreateBatchLogMutation();
 
     const [selections, setSelections] = useState<Record<string, { completed: boolean, used_easy_variant: boolean, effort_level: number }>>({});
     const [globalStats, setGlobalStats] = useState({ mood: 'good', energy: 3, notes: '' });
@@ -21,7 +21,7 @@ export function DailyLogModal({ isOpen, onClose }: DailyLogModalProps) {
         if (systems) {
             const initial: any = {};
             systems.forEach(s => {
-                const existing = existingLogs?.find(l => l.system_id === s.id);
+                const existing = existingLogs?.find(l => l.system_id === s.id && !l.habit_id);
                 initial[s.id] = {
                     completed: existing?.completed || false,
                     used_easy_variant: existing?.used_easy_variant || false,
@@ -48,18 +48,23 @@ export function DailyLogModal({ isOpen, onClose }: DailyLogModalProps) {
 
     const handleSubmit = async () => {
         try {
-            const promises = Object.entries(selections).map(([systemId, data]) => {
-                return createLog({
-                    system_id: systemId,
-                    date: today,
-                    ...data,
-                    ...globalStats
-                }).unwrap();
-            });
-            await Promise.all(promises);
+            const logs = Object.entries(selections).map(([systemId, data]) => ({
+                system_id: systemId,
+                ...data
+            }));
+
+            await createBatchLog({
+                date: today,
+                mood: globalStats.mood,
+                energy_level: globalStats.energy,
+                notes: globalStats.notes,
+                logs
+            }).unwrap();
+
             onClose();
         } catch (err) {
-            console.error(err);
+            console.error('Batch save failed:', err);
+            alert('Failed to save activity logs. Please check your connection and try again.');
         }
     };
 

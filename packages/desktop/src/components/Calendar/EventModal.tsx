@@ -1,18 +1,24 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar as CalIcon, Clock, MapPin, Repeat, Link as LinkIcon, Zap } from 'lucide-react';
-import { useAddTaskMutation } from '../../features/api/apiSlice';
+import { format } from 'date-fns';
+import { useAddTaskMutation, useUpdateTaskMutation, useDeleteTaskMutation, useCreateHabitMutation, useGetAreasQuery } from '../../features/api/apiSlice';
+import { Trash2, X, Calendar as CalIcon, Clock, Repeat, MapPin, Link as LinkIcon, Zap, Check } from 'lucide-react';
 
 interface EventModalProps {
     isOpen: boolean;
     onClose: () => void;
     initialDate?: Date;
     initialStartTime?: Date;
+    editingTask?: any; // Can be a task or a system (different id patterns)
 }
 
-export default function EventModal({ isOpen, onClose, initialDate, initialStartTime }: EventModalProps) {
+export default function EventModal({ isOpen, onClose, initialDate, initialStartTime, editingTask }: EventModalProps) {
     const [addTask] = useAddTaskMutation();
-    // const { data: areas = [] } = useGetAreasQuery(); // Unused for now as we use simplified gradient picker
+    const [updateTask] = useUpdateTaskMutation();
+    const [deleteTask] = useDeleteTaskMutation();
+    const [createHabit] = useCreateHabitMutation();
+    const { data: areas = [] } = useGetAreasQuery();
 
+    const [eventType, setEventType] = useState<'task' | 'habit'>('task');
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -26,24 +32,88 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
         sessionType: '', // 'pomodoro' | 'deepwork' | 'custom'
         sessionDuration: 30,
         links: '',
-        color: '#6366f1' // Defaults
+        color: '#6366f1', // Defaults
+        cue: '',
+        reward: '',
+        routine_hard: '',
+        routine_easy: ''
     });
 
     useEffect(() => {
         if (isOpen) {
-            const d = initialDate || new Date();
-            const s = initialStartTime || d;
-            // Default 1 hour duration
-            const e = new Date(s.getTime() + 60 * 60 * 1000);
+            if (editingTask && editingTask.id && !editingTask.id.startsWith('ext-')) {
+                // Determine if it's a habit or task (simulated for now by presence of specific fields)
+                // For this MVP, calendar mostly edits 'tasks'
+                setEventType('task');
 
-            setFormData(prev => ({
-                ...prev,
-                date: d.toISOString().split('T')[0],
-                startTime: s.toTimeString().slice(0, 5),
-                endTime: e.toTimeString().slice(0, 5)
-            }));
+                const d = getSafeDate(editingTask.start_time || editingTask.due_date) || new Date();
+                const s = getSafeDate(editingTask.start_time) || d;
+                const e = getSafeDate(editingTask.end_time) || new Date(s.getTime() + 60 * 60 * 1000);
+
+                let recurringDays = [];
+                try {
+                    if (editingTask.recurring_days) {
+                        recurringDays = typeof editingTask.recurring_days === 'string'
+                            ? JSON.parse(editingTask.recurring_days)
+                            : editingTask.recurring_days;
+                    }
+                } catch (e) {
+                    recurringDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                }
+
+                setFormData({
+                    title: editingTask.title || '',
+                    description: editingTask.description || '',
+                    date: format(d, 'yyyy-MM-dd'),
+                    startTime: format(s, 'HH:mm'),
+                    endTime: format(e, 'HH:mm'),
+                    location: editingTask.location || '',
+                    isRecurring: !!editingTask.is_recurring,
+                    recurringDays: Array.isArray(recurringDays) ? recurringDays : [],
+                    areaId: editingTask.area_id || '',
+                    sessionType: editingTask.session_config ? JSON.parse(editingTask.session_config).type : '',
+                    sessionDuration: editingTask.session_config ? JSON.parse(editingTask.session_config).duration : 30,
+                    links: editingTask.links || '',
+                    color: editingTask.color || '#6366f1',
+                    cue: '',
+                    reward: '',
+                    routine_hard: '',
+                    routine_easy: ''
+                });
+            } else {
+                const d = initialDate || new Date();
+                const s = initialStartTime || d;
+                // Default 1 hour duration
+                const e = new Date(s.getTime() + 60 * 60 * 1000);
+
+                setFormData({
+                    title: '',
+                    description: '',
+                    date: format(d, 'yyyy-MM-dd'),
+                    startTime: format(s, 'HH:mm'),
+                    endTime: format(e, 'HH:mm'),
+                    location: '',
+                    isRecurring: false,
+                    recurringDays: [],
+                    areaId: '',
+                    sessionType: '',
+                    sessionDuration: 30,
+                    links: '',
+                    color: '#6366f1',
+                    cue: '',
+                    reward: '',
+                    routine_hard: '',
+                    routine_easy: ''
+                });
+            }
         }
-    }, [isOpen, initialDate, initialStartTime]);
+    }, [isOpen, initialDate, initialStartTime, editingTask]);
+
+    const getSafeDate = (val: any) => {
+        if (!val) return null;
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? null : d;
+    };
 
     const handleChange = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -58,6 +128,14 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
         });
     };
 
+    const selectEveryday = () => {
+        setFormData(prev => ({
+            ...prev,
+            isRecurring: true,
+            recurringDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -66,25 +144,65 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
         const endISO = `${formData.date}T${formData.endTime}:00`;
 
         try {
-            await addTask({
-                title: formData.title,
-                description: formData.description,
-                due_date: startISO, // fallback
-                start_time: startISO,
-                end_time: endISO,
-                location: formData.location,
-                area_id: formData.areaId || undefined, // Send undefined if empty string
-                is_recurring: formData.isRecurring,
-                recurring_days: JSON.stringify(formData.recurringDays),
-                links: formData.links, // Keep simple for now
-                color: formData.color,
-                session_config: formData.sessionType ? JSON.stringify({ type: formData.sessionType, duration: formData.sessionDuration }) : undefined
-            }).unwrap(); // .unwrap() allows us to catch the error
+            if (eventType === 'task') {
+                const payload = {
+                    title: formData.title,
+                    description: formData.description,
+                    due_date: startISO,
+                    start_time: startISO,
+                    end_time: endISO,
+                    location: formData.location,
+                    area_id: formData.areaId || undefined,
+                    is_recurring: formData.isRecurring,
+                    recurring_days: JSON.stringify(formData.recurringDays),
+                    links: formData.links,
+                    color: formData.color,
+                    session_config: formData.sessionType ? JSON.stringify({ type: formData.sessionType, duration: formData.sessionDuration }) : undefined
+                };
+
+                if (editingTask && !editingTask.id.startsWith('ext-')) {
+                    await updateTask({ id: editingTask.id, updates: payload }).unwrap();
+                } else {
+                    await addTask(payload).unwrap();
+                }
+            } else {
+                // Map recurringDays (Mon, Tue...) to index (0-6) for Habit model
+                const dayMap: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+                const daysIndices = formData.recurringDays.map(d => dayMap[d]);
+
+                await createHabit({
+                    name: formData.title,
+                    description: formData.description,
+                    start_time: formData.startTime,
+                    end_time: formData.endTime,
+                    is_active: true,
+                    days_of_week: daysIndices.length > 0 ? daysIndices : [0, 1, 2, 3, 4, 5, 6],
+                    color_hex: formData.color,
+                    habit_type: 'habit',
+                    life_area_id: formData.areaId || null,
+                    cue: formData.cue,
+                    reward: formData.reward,
+                    routine_hard: formData.routine_hard,
+                    routine_easy: formData.routine_easy
+                }).unwrap();
+            }
 
             onClose();
         } catch (err) {
-            console.error("Failed to create event:", err);
-            alert("Failed to create event. Please check your inputs.");
+            console.error("Failed to save event:", err);
+            alert("Failed to save event. Please check your inputs.");
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!editingTask) return;
+        if (confirm(`Permanently remove event "${editingTask.title}"?`)) {
+            try {
+                await deleteTask(editingTask.id).unwrap();
+                onClose();
+            } catch (err) {
+                alert("Failed to delete event.");
+            }
         }
     };
 
@@ -107,9 +225,20 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
 
                 {/* Header */}
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                    <h2 className="text-xl font-bold text-white bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                        Create New Event
-                    </h2>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => setEventType('task')}
+                            className={`text-xl font-bold transition-all ${eventType === 'task' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
+                        >
+                            New Task
+                        </button>
+                        <button
+                            onClick={() => setEventType('habit')}
+                            className={`text-xl font-bold transition-all ${eventType === 'habit' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
+                        >
+                            New Habit
+                        </button>
+                    </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
                         <X size={24} />
                     </button>
@@ -122,7 +251,7 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                     <div>
                         <input
                             type="text"
-                            placeholder="Add generic title, e.g., 'Deep Work Session'"
+                            placeholder={eventType === 'task' ? "Add generic title, e.g., 'Deep Work Session'" : "Habit name, e.g., 'Daily Meditation'"}
                             className="w-full bg-transparent text-3xl font-bold text-white placeholder-gray-600 border-none focus:outline-none focus:ring-0 p-0 outline-none shadow-none"
                             value={formData.title}
                             onChange={e => handleChange('title', e.target.value)}
@@ -179,69 +308,129 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                             </button>
                         </div>
                         {formData.isRecurring && (
-                            <div className="flex gap-2 justify-between">
-                                {days.map(day => (
-                                    <button
-                                        key={day}
-                                        onClick={() => toggleDay(day)}
-                                        className={`w-10 h-10 rounded-full text-xs font-bold transition-all ${formData.recurringDays.includes(day)
-                                            ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
-                                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                                            }`}
-                                    >
-                                        {day[0]}
-                                    </button>
-                                ))}
+                            <div className="flex flex-col gap-2">
+                                <div className="flex gap-2 justify-between">
+                                    {days.map(day => (
+                                        <button
+                                            key={day}
+                                            onClick={() => toggleDay(day)}
+                                            className={`w-10 h-10 rounded-full text-xs font-bold transition-all ${formData.recurringDays.includes(day)
+                                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            {day[0]}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={selectEveryday}
+                                    className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest hover:text-indigo-300 transition-colors self-start px-1"
+                                >
+                                    + Set Everyday
+                                </button>
                             </div>
                         )}
                     </div>
 
-                    {/* Location & Links */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-                                <MapPin size={16} /> Location
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Add location"
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                value={formData.location}
-                                onChange={e => handleChange('location', e.target.value)}
-                            />
+                    {/* Location & Links / Habit Identity */}
+                    {eventType === 'task' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm text-gray-400 font-medium">
+                                    <MapPin size={16} /> Location
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Add location"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    value={formData.location}
+                                    onChange={e => handleChange('location', e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm text-gray-400 font-medium">
+                                    <LinkIcon size={16} /> Links
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Add links (e.g. Zoom, Docs)"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    value={formData.links}
+                                    onChange={e => handleChange('links', e.target.value)}
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-                                <LinkIcon size={16} /> Links
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Add links (e.g. Zoom, Docs)"
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                value={formData.links}
-                                onChange={e => handleChange('links', e.target.value)}
-                            />
+                    ) : (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm text-gray-400 font-medium">The Cue (Trigger)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="After I..."
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        value={formData.cue}
+                                        onChange={e => handleChange('cue', e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm text-gray-400 font-medium">The Reward</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Then I feel..."
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        value={formData.reward}
+                                        onChange={e => handleChange('reward', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm text-gray-400 font-medium">Protocol (Hard Version)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="100% effort..."
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        value={formData.routine_hard}
+                                        onChange={e => handleChange('routine_hard', e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm text-gray-400 font-medium">Protocol (Easy Version)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Min viable..."
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        value={formData.routine_easy}
+                                        onChange={e => handleChange('routine_easy', e.target.value)}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Life Area Selection */}
                     <div className="space-y-3">
                         <label className="text-sm text-gray-400 font-medium">Life Area</label>
                         <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                            {gradients.map(g => (
+                            {areas.map(a => (
                                 <button
-                                    key={g.name}
-                                    onClick={() => handleChange('color', g.color)}
+                                    key={a.id}
+                                    onClick={() => {
+                                        handleChange('color', a.color_hex);
+                                        handleChange('areaId', a.id);
+                                    }}
                                     className={`
-                                        h-12 rounded-lg bg-gradient-to-br ${g.grad} opacity-70 hover:opacity-100 transition-all border-2
-                                        ${formData.color === g.color ? 'border-white scale-[1.05] opacity-100 shadow-xl' : 'border-transparent'}
+                                        h-12 rounded-lg opacity-70 hover:opacity-100 transition-all border-2 flex items-center justify-center
+                                        ${formData.areaId === a.id ? 'border-white scale-[1.05] opacity-100 shadow-xl' : 'border-transparent'}
                                     `}
-                                    title={g.name}
+                                    style={{ backgroundColor: a.color_hex }}
+                                    title={a.name}
                                 >
-                                    <span className="sr-only">{g.name}</span>
+                                    <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate px-1">{a.name}</span>
                                 </button>
                             ))}
-                            {/* Add 'Other' logic or API areas here */}
                         </div>
                     </div>
 
@@ -282,19 +471,33 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        className="px-6 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors font-medium"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSubmit} // @ts-ignore
-                        className="px-8 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all transform"
-                    >
-                        Create Event
-                    </button>
+                <div className="p-6 border-t border-white/10 bg-black/20 flex justify-between items-center bg-white/5">
+                    <div>
+                        {editingTask && !editingTask.id.startsWith('ext-') && (
+                            <button
+                                onClick={handleDelete}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-all font-bold text-xs"
+                            >
+                                <Trash2 size={16} />
+                                Delete
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            className="px-6 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors font-medium"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={!formData.title}
+                            className="px-8 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all transform disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {editingTask ? 'Update Protocol' : `Create ${eventType === 'task' ? 'Event' : 'Habit'}`}
+                        </button>
+                    </div>
                 </div>
 
             </div>

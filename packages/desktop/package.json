@@ -18,9 +18,11 @@
         ]
     },
     "scripts": {
-        "dev": "vite",
-        "build": "npx -p typescript tsc && vite build",
-        "package": "npx -p typescript tsc && vite build && electron-builder",
+        "dev:web": "vite",
+        "dev": "ELECTRON=true vite",
+        "build:web": "vite build",
+        "build": "ELECTRON=true tsc && ELECTRON=true vite build",
+        "package": "ELECTRON=true tsc && ELECTRON=true vite build && ELECTRON=true electron-builder",
         "preview": "vite preview"
     },
     "dependencies": {

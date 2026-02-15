@@ -4,9 +4,9 @@ import { Activity } from 'lucide-react';
 export function BurnoutGauge() {
     const { data: burnout } = useGetBurnoutScoreQuery();
 
-    const score = burnout?.score || 0;
-    const level = burnout?.level || 'Unknown';
-    const factors = burnout?.factors || [];
+    const score = burnout?.overall_score || 0;
+    const level = burnout?.risk_level || 'Unknown';
+    const factors = burnout?.recommendations || [];
 
     // Color based on score
     let colorClass = 'text-green-400';

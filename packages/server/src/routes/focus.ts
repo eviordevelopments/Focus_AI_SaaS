@@ -1,7 +1,7 @@
 import express from 'express';
 import db from '../db';
 import crypto from 'crypto';
-import { format, startOfWeek, endOfWeek, getDay, subDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, getDay, subDays, eachDayOfInterval, parseISO } from 'date-fns';
 
 const router = express.Router();
 
@@ -24,38 +24,12 @@ router.post('/systems', async (req: any, res) => {
             id,
             user_id: req.user?.id,
             ...req.body,
-            scheduled_days: JSON.stringify(req.body.scheduled_days || [])
+            scheduled_days: JSON.stringify(req.body.scheduled_days || []),
+            identity_shift_id: req.body.identity_shift_id || null,
+            project_id: req.body.project_id || null
         };
 
-        await db.transaction(async (trx) => {
-            await trx('focus_systems').insert(systemData);
-
-            // Auto-create a default habit for this system so it appears on dashboard
-            const daysMap: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
-            const scheduledDays = req.body.scheduled_days || [];
-            const numericDays = Array.isArray(scheduledDays)
-                ? scheduledDays.map((d: string) => daysMap[d] ?? -1).filter((d: number) => d !== -1)
-                : [0, 1, 2, 3, 4, 5, 6];
-
-            if (numericDays.length === 0 && Array.isArray(scheduledDays) && scheduledDays.length > 0) {
-                // Fallback if mapping failed (maybe they are already numbers?)
-                // But UI sends ['Mon', 'Fri']. 
-            }
-
-            const habitId = crypto.randomUUID();
-            await trx('habits').insert({
-                id: habitId,
-                user_id: req.user?.id,
-                system_id: id,
-                name: req.body.name,
-                description: req.body.description,
-                days_of_week: JSON.stringify(numericDays),
-                frequency: 'daily',
-                habit_type: 'habit',
-                is_active: true,
-                base_xp: 25 // Default XP
-            });
-        });
+        await db('focus_systems').insert(systemData);
 
         const system = await db('focus_systems').where({ id }).first();
         res.status(201).json(system);
@@ -73,11 +47,168 @@ router.put('/systems/:id', async (req: any, res) => {
         }
         await db('focus_systems')
             .where({ id: req.params.id, user_id: req.user?.id })
-            .update(updateData);
+            .update({
+                ...updateData,
+                identity_shift_id: updateData.identity_shift_id || null,
+                project_id: updateData.project_id || null
+            });
         const system = await db('focus_systems').where({ id: req.params.id }).first();
         res.json(system);
     } catch (error) {
         res.status(500).json({ error: 'Failed to update system' });
+    }
+});
+
+// --- Roadmap ---
+router.get('/roadmap/status', async (req: any, res) => {
+    try {
+        const userId = req.user?.id;
+        const year = parseInt(req.query.year as string) || new Date().getFullYear();
+
+        // Fetch configs for the year
+        const configs = await db('monthly_roadmap_configs')
+            .where({ user_id: userId, year })
+            .select('*');
+
+        // Fetch achievements
+        const achievements = await db('monthly_achievements')
+            .where({ user_id: userId, year })
+            .select('*');
+
+        // Fetch logs for the whole year to calculate rough completion
+        // In a real app, we'd cache these monthly summaries
+        const logs = await db('daily_logs')
+            .where({ user_id: userId })
+            .where('date', '>=', `${year}-01-01`)
+            .where('date', '<=', `${year}-12-31`)
+            .select('date', 'completed', 'habit_id');
+
+        const monthlyStatus = Array.from({ length: 12 }, (_, i) => {
+            const month = i + 1;
+            const monthPrefix = `${year}-${month.toString().padStart(2, '0')}`;
+            const monthLogs = logs.filter(l => l.date.startsWith(monthPrefix));
+
+            const habitLogs = monthLogs.filter(l => l.habit_id);
+            const completionRate = habitLogs.length > 0
+                ? (habitLogs.filter(l => l.completed).length / habitLogs.length) * 100
+                : 0;
+
+            const config = configs.find(c => c.month === month);
+            const achievement = achievements.find(a => a.month === month);
+
+            return {
+                month,
+                completion_rate: Math.round(completionRate),
+                is_completed: !!achievement,
+                has_config: !!config,
+                achievement
+            };
+        });
+
+        res.json(monthlyStatus);
+    } catch (error) {
+        console.error('Roadmap status error:', error);
+        res.status(500).json({ error: 'Failed to fetch roadmap status' });
+    }
+});
+
+router.get('/roadmap/monthly/:year/:month', async (req: any, res) => {
+    try {
+        const userId = req.user?.id;
+        const { year, month } = req.params;
+        const monthStr = month.toString().padStart(2, '0');
+        const monthPrefix = `${year}-${monthStr}`;
+
+        const config = await db('monthly_roadmap_configs')
+            .where({ user_id: userId, year, month })
+            .first();
+
+        const logs = await db('daily_logs')
+            .where({ user_id: userId })
+            .where('date', 'like', `${monthPrefix}%`)
+            .select('*');
+
+        const healthEntries = await db('health_entries')
+            .where({ user_id: userId })
+            .where('date', 'like', `${monthPrefix}%`)
+            .select('*');
+
+        // Aggregations
+        const habitIds = [...new Set(logs.filter(l => l.habit_id).map(l => l.habit_id))];
+        const habits = await db('habits').whereIn('id', habitIds);
+
+        const habitStats = habits.map(h => {
+            const hLogs = logs.filter(l => l.habit_id === h.id);
+            const completed = hLogs.filter(l => l.completed).length;
+            return {
+                name: h.name,
+                completion: hLogs.length > 0 ? (completed / hLogs.length) * 100 : 0,
+                total: hLogs.length
+            };
+        });
+
+        const avgHealth = {
+            mood: healthEntries.reduce((acc, e) => acc + (e.mood || 0), 0) / (healthEntries.length || 1),
+            sleep: healthEntries.reduce((acc, e) => acc + (e.sleep_hours || 0), 0) / (healthEntries.length || 1),
+            stress: healthEntries.reduce((acc, e) => acc + (e.stress || 0), 0) / (healthEntries.length || 1)
+        };
+
+        res.json({
+            config: config ? {
+                ...config,
+                checklist_requirements: JSON.parse(config.checklist_requirements || '[]'),
+                mvl_tiers: JSON.parse(config.mvl_tiers || '{}')
+            } : null,
+            habitStats,
+            avgHealth,
+            logCount: logs.length
+        });
+    } catch (error) {
+        console.error('Monthly roadmap error:', error);
+        res.status(500).json({ error: 'Failed to fetch monthly roadmap detail' });
+    }
+});
+
+router.post('/roadmap/config', async (req: any, res) => {
+    try {
+        const userId = req.user?.id;
+        const { year, month, checklist_requirements, mvl_tiers } = req.body;
+
+        const configData = {
+            user_id: userId,
+            year,
+            month,
+            checklist_requirements: JSON.stringify(checklist_requirements || []),
+            mvl_tiers: JSON.stringify(mvl_tiers || {})
+        };
+
+        const existing = await db('monthly_roadmap_configs')
+            .where({ user_id: userId, year, month })
+            .first();
+
+        if (existing) {
+            await db('monthly_roadmap_configs')
+                .where({ id: existing.id })
+                .update({ ...configData, updated_at: db.fn.now() });
+        } else {
+            await db('monthly_roadmap_configs').insert({
+                id: crypto.randomUUID(),
+                ...configData
+            });
+        }
+
+        const config = await db('monthly_roadmap_configs')
+            .where({ user_id: userId, year, month })
+            .first();
+
+        res.json({
+            ...config,
+            checklist_requirements: JSON.parse(config.checklist_requirements || '[]'),
+            mvl_tiers: JSON.parse(config.mvl_tiers || '{}')
+        });
+    } catch (error) {
+        console.error('Roadmap config error:', error);
+        res.status(500).json({ error: 'Failed to save roadmap config' });
     }
 });
 
@@ -108,32 +239,46 @@ router.get('/logs', async (req: any, res) => {
 
 import { calculateXPEarned, updateStreak, checkAchievements } from '../services/gamification';
 
-async function updateDaySummary(userId: string, date: string) {
+async function updateDaySummary(userId: string, date: string, trx?: any) {
+    const q = trx || db;
     try {
-        const todayDay = getDay(new Date(date));
+        const parsedDate = parseISO(date);
+        const dayOfWeek = getDay(parsedDate);
 
-        // 1. Calculate scheduled habits
-        const habits = await db('habits').where({ user_id: userId, is_active: true });
-        const scheduledHabits = habits.filter(h => {
-            if (!h.days_of_week) return true; // Daily if not specified
-            const days = JSON.parse(h.days_of_week);
-            return days.includes(todayDay);
+        // 1. Calculate scheduled habits for this specific day
+        const habits = await q('habits').where({ user_id: userId, is_active: true });
+        const scheduledHabits = habits.filter((h: any) => {
+            if (!h.days_of_week) return true;
+            try {
+                const days = typeof h.days_of_week === 'string' ? JSON.parse(h.days_of_week) : h.days_of_week;
+                return Array.isArray(days) && days.includes(dayOfWeek);
+            } catch (e) {
+                return true; // Default to scheduled if parse fails
+            }
         });
 
-        // 2. Calculate completed habits
-        const logs = await db('daily_logs')
+        // 2. Calculate completed habits from logs for today
+        const scheduledHabitIds = scheduledHabits.map((h: any) => h.id);
+        const logs = await q('daily_logs')
             .where({ user_id: userId, date, completed: true })
-            .whereNotNull('habit_id');
+            .whereIn('habit_id', scheduledHabitIds);
 
-        const xpSum = await db('daily_logs')
+        const xpSum = await q('daily_logs')
             .where({ user_id: userId, date })
             .sum('xp_earned as totalXP')
             .first();
 
-        const qualityAvg = await db('daily_logs')
+        const qualityAvg = await q('daily_logs')
             .where({ user_id: userId, date })
             .whereNotNull('quality_rating')
             .avg('quality_rating as avgQuality')
+            .first();
+
+        const latestNote = await q('daily_logs')
+            .where({ user_id: userId, date })
+            .whereNotNull('notes')
+            .whereNot('notes', '')
+            .orderBy('created_at', 'desc')
             .first();
 
         const summaryData = {
@@ -144,27 +289,171 @@ async function updateDaySummary(userId: string, date: string) {
             habits_completed: logs.length,
             completion_rate: scheduledHabits.length > 0 ? logs.length / scheduledHabits.length : 0,
             xp_earned: Number(xpSum?.totalXP || 0),
-            average_habit_quality: qualityAvg?.avgQuality ? Math.round(Number(qualityAvg.avgQuality)) : null
+            average_habit_quality: qualityAvg?.avgQuality ? Math.round(Number(qualityAvg.avgQuality)) : null,
+            notes: latestNote?.notes || null
         };
 
-        await db('day_summaries')
+        await q('day_summaries')
             .insert(summaryData)
             .onConflict(['user_id', 'date'])
             .merge();
 
+        return summaryData;
     } catch (error) {
         console.error('Failed to update day summary:', error);
+        throw error;
     }
 }
 
+// --- Batch Logging (Used by Daily Alignment Modal) ---
+router.post('/logs/batch', async (req: any, res) => {
+    const trx = await db.transaction();
+    try {
+        const { date, mood, energy_level, notes, logs: items } = req.body;
+        const userId = req.user?.id;
+        const results = [];
+
+        for (const item of items) {
+            const { system_id, habit_id, completed, effort_level, used_easy_variant } = item;
+
+            // 1. Calculate gamification data BEFORE insert to avoid ID mismatch on merge
+            let xp_earned = 0;
+            if (completed) {
+                const xpResult = await calculateXPEarned(userId, system_id, effort_level || 3, habit_id, undefined, trx);
+                xp_earned = xpResult.totalXP;
+                const streakResult = await updateStreak(userId, system_id, date, habit_id, undefined, trx);
+                results.push({ system_id, habit_id, xp: xp_earned, streak: streakResult });
+            }
+
+            const logData = {
+                id: crypto.randomUUID(),
+                user_id: userId,
+                system_id,
+                habit_id: habit_id || null,
+                date,
+                completed,
+                effort_level: effort_level || 3,
+                mood: mood || 'good',
+                energy_level: energy_level || 3,
+                notes: notes || '',
+                used_easy_variant: !!used_easy_variant,
+                xp_earned
+            };
+
+            if (habit_id) {
+                // For habits, we use (user_id, habit_id, date)
+                const existing = await trx('daily_logs')
+                    .where({ user_id: userId, habit_id, date })
+                    .first();
+
+                if (existing) {
+                    await trx('daily_logs')
+                        .where({ id: existing.id })
+                        .update({ completed, effort_level: effort_level || 3, mood: mood || 'good', energy_level: energy_level || 3, notes: notes || '', used_easy_variant: !!used_easy_variant, xp_earned });
+                } else {
+                    await trx('daily_logs').insert(logData);
+                }
+            } else {
+                // For direct system logs (where habit_id is null), use the partial unique index logic
+                const existing = await trx('daily_logs')
+                    .where({ user_id: userId, system_id, date })
+                    .whereNull('habit_id')
+                    .first();
+
+                if (existing) {
+                    await trx('daily_logs')
+                        .where({ id: existing.id })
+                        .update({ completed, effort_level: effort_level || 3, mood: mood || 'good', energy_level: energy_level || 3, notes: notes || '', used_easy_variant: !!used_easy_variant, xp_earned });
+                } else {
+                    await trx('daily_logs').insert(logData);
+                }
+            }
+
+            // 2. Auto-complete habits for primary system log
+            if (!habit_id && system_id && completed) {
+                const nestedHabits = await trx('habits').where({ system_id, user_id: userId, is_active: true });
+                for (const habit of nestedHabits) {
+                    // Calculate XP and update streak for EACH nested habit
+                    const habitXP = await calculateXPEarned(userId, system_id, effort_level || 3, habit.id, undefined, trx);
+                    await updateStreak(userId, system_id, date, habit.id, undefined, trx);
+
+                    const existingHabitLog = await trx('daily_logs')
+                        .where({ user_id: userId, habit_id: habit.id, date })
+                        .first();
+
+                    if (existingHabitLog) {
+                        await trx('daily_logs')
+                            .where({ id: existingHabitLog.id })
+                            .update({ completed: true, effort_level: effort_level || 3, mood: mood || 'good', energy_level: energy_level || 3, used_easy_variant: !!used_easy_variant, xp_earned: habitXP.totalXP });
+                    } else {
+                        await trx('daily_logs').insert({
+                            id: crypto.randomUUID(),
+                            user_id: userId,
+                            system_id,
+                            habit_id: habit.id,
+                            date,
+                            completed: true,
+                            effort_level: effort_level || 3,
+                            mood: mood || 'good',
+                            energy_level: energy_level || 3,
+                            used_easy_variant: !!used_easy_variant,
+                            xp_earned: habitXP.totalXP
+                        });
+                    }
+                }
+            }
+
+            // 3. Update Identity XP if applicable
+            if (completed && xp_earned > 0) {
+                const system = await trx('focus_systems').where({ id: system_id }).first();
+                if (system?.identity_id) {
+                    await trx('identities')
+                        .where({ id: system.identity_id })
+                        .increment('xp', xp_earned);
+                }
+            }
+        }
+
+        // 4. Update Day Summary within same transaction to ensure consistency
+        const summary = await updateDaySummary(userId, date, trx);
+
+        // 5. Also update health_entries if they exist or create one
+        await trx('health_entries')
+            .insert({
+                id: crypto.randomUUID(),
+                user_id: userId,
+                date,
+                mood: mood === 'great' ? 10 : mood === 'good' ? 8 : mood === 'neutral' ? 5 : 3,
+                stress: 5, // Default
+                sleep_hours: 8 // Default
+            })
+            .onConflict(['user_id', 'date'])
+            .merge(['mood']); // Only merge mood from this log
+
+        await trx.commit();
+        res.status(201).json({ success: true, summary, results });
+    } catch (error) {
+        await trx.rollback();
+        console.error('Batch logging error:', error);
+        res.status(500).json({ error: 'Failed to process batch logs' });
+    }
+});
+
 router.post('/logs', async (req: any, res) => {
     try {
-        const id = crypto.randomUUID();
-        const { system_id, habit_id, date, completed, effort_level } = req.body;
+        const { system_id, habit_id, date, completed, effort_level, used_easy_variant } = req.body;
+        const userId = req.user?.id;
+
+        let xp_earned = 0;
+        if (completed) {
+            const xpResult = await calculateXPEarned(userId, system_id, effort_level || 3, habit_id);
+            xp_earned = xpResult.totalXP;
+            await updateStreak(userId, system_id, date, habit_id);
+        }
 
         const logData = {
-            id,
-            user_id: req.user?.id,
+            id: crypto.randomUUID(),
+            user_id: userId,
             system_id,
             habit_id: habit_id || null,
             date,
@@ -173,55 +462,78 @@ router.post('/logs', async (req: any, res) => {
             mood: req.body.mood || 'good',
             energy_level: req.body.energy_level || 3,
             notes: req.body.notes || '',
-            xp_earned: 0
+            used_easy_variant: !!used_easy_variant,
+            xp_earned
         };
 
-        // 1. Log the activity (Upsert based on habit + date or system + date if no habit)
-        const conflictColumns = habit_id ? ['habit_id', 'date'] : ['system_id', 'date'];
+        if (habit_id) {
+            const existing = await db('daily_logs')
+                .where({ user_id: userId, habit_id, date })
+                .first();
 
-        await db('daily_logs')
-            .insert(logData)
-            .onConflict(conflictColumns)
-            .merge();
-
-        let gamificationResult = null;
-
-        // 2. If completed, trigger gamification logic
-        if (completed) {
-            const xpResult = await calculateXPEarned(req.user?.id, system_id, effort_level || 3, habit_id);
-            const streakResult = await updateStreak(req.user?.id, system_id, date, habit_id);
-
-            // Save XP to log
-            await db('daily_logs').where({ id }).update({ xp_earned: xpResult.totalXP });
-
-            // Update Identity XP if a supporting identity exists
-            const system = await db('focus_systems').where({ id: system_id }).first();
-            if (system?.identity_id) {
-                await db('identities')
-                    .where({ id: system.identity_id })
-                    .increment('xp', xpResult.totalXP);
-
-                // Check for level up
-                const identity = await db('identities').where({ id: system.identity_id }).first();
-                const newLevel = Math.floor(Math.sqrt(identity.xp / 100)) + 1;
-                if (newLevel > identity.level) {
-                    await db('identities').where({ id: system.identity_id }).update({ level: newLevel });
-                }
+            if (existing) {
+                await db('daily_logs')
+                    .where({ id: existing.id })
+                    .update({ completed, effort_level: effort_level || 3, mood: req.body.mood || 'good', energy_level: req.body.energy_level || 3, notes: req.body.notes || '', used_easy_variant: !!used_easy_variant, xp_earned });
+            } else {
+                await db('daily_logs').insert(logData);
             }
+        } else {
+            const existing = await db('daily_logs')
+                .where({ user_id: userId, system_id, date })
+                .whereNull('habit_id')
+                .first();
 
-            gamificationResult = {
-                xpEarned: xpResult.totalXP,
-                streak: streakResult,
-                multipliers: xpResult.multipliers,
-                levelUp: false
-            };
+            if (existing) {
+                await db('daily_logs')
+                    .where({ id: existing.id })
+                    .update({ completed, effort_level: effort_level || 3, mood: req.body.mood || 'good', energy_level: req.body.energy_level || 3, notes: req.body.notes || '', used_easy_variant: !!used_easy_variant, xp_earned });
+            } else {
+                await db('daily_logs').insert(logData);
+            }
         }
 
-        // 3. Update Day Summary
-        await updateDaySummary(req.user?.id, date);
+        if (!habit_id && system_id && completed) {
+            const habits = await db('habits').where({ system_id, user_id: userId, is_active: true });
+            for (const habit of habits) {
+                const habitXP = await calculateXPEarned(userId, system_id, effort_level || 3, habit.id);
+                await updateStreak(userId, system_id, date, habit.id);
 
-        const log = await db('daily_logs').where({ id }).first();
-        res.status(201).json({ ...log, gamification: gamificationResult });
+                const existingHabitLog = await db('daily_logs')
+                    .where({ user_id: userId, habit_id: habit.id, date })
+                    .first();
+
+                if (existingHabitLog) {
+                    await db('daily_logs')
+                        .where({ id: existingHabitLog.id })
+                        .update({ completed: true, effort_level: effort_level || 3, mood: req.body.mood || 'good', energy_level: req.body.energy_level || 3, used_easy_variant: !!used_easy_variant, xp_earned: habitXP.totalXP });
+                } else {
+                    await db('daily_logs').insert({
+                        id: crypto.randomUUID(),
+                        user_id: userId,
+                        system_id,
+                        habit_id: habit.id,
+                        date,
+                        completed: true,
+                        effort_level: effort_level || 3,
+                        mood: req.body.mood || 'good',
+                        energy_level: req.body.energy_level || 3,
+                        used_easy_variant: !!used_easy_variant,
+                        xp_earned: habitXP.totalXP
+                    });
+                }
+            }
+        }
+
+        if (completed && xp_earned > 0) {
+            const system = await db('focus_systems').where({ id: system_id }).first();
+            if (system?.identity_id) {
+                await db('identities').where({ id: system.identity_id }).increment('xp', xp_earned);
+            }
+        }
+
+        await updateDaySummary(userId, date);
+        res.status(201).json({ success: true });
     } catch (error) {
         console.error('Logging error:', error);
         res.status(500).json({ error: 'Failed to log activity' });
@@ -298,7 +610,27 @@ router.get('/habits', async (req: any, res) => {
         let query = db('habits').where({ user_id: req.user?.id });
         if (system_id) query = query.where({ system_id });
         const habits = await query.orderBy('order', 'asc').select('*');
-        res.json(habits);
+
+        const habitIds = habits.map((h: any) => h.id);
+
+        // 1. Fetch completed dates from daily_logs
+        const logs = await db('daily_logs')
+            .whereIn('habit_id', habitIds)
+            .where({ user_id: req.user?.id, completed: true })
+            .select('habit_id', 'date');
+
+        // 2. Fetch streaks
+        const streaks = await db('streaks')
+            .whereIn('habit_id', habitIds)
+            .where({ user_id: req.user?.id });
+
+        const habitsWithStats = habits.map((h: any) => ({
+            ...h,
+            completed_dates: logs.filter((l: any) => l.habit_id === h.id).map((l: any) => l.date),
+            streak: streaks.find(s => s.habit_id === h.id)?.current_streak || 0
+        }));
+
+        res.json(habitsWithStats);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch habits' });
     }
@@ -388,6 +720,84 @@ router.get('/stats/habits/overview', async (req: any, res) => {
     }
 });
 
+router.get('/stats/habits/breakdown', async (req: any, res) => {
+    try {
+        const { period } = req.query; // year, quarter, month, week
+        const userId = req.user?.id;
+
+        let days = 30;
+        if (period === 'week') days = 7;
+        if (period === 'quarter') days = 90;
+        if (period === 'year') days = 365;
+
+        const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
+        const endDate = format(new Date(), 'yyyy-MM-dd');
+
+        // 1. Get all active habits
+        const habits = await db('habits').where({ user_id: userId, is_active: true });
+
+        // 2. Get all logs for the period
+        const logs = await db('daily_logs')
+            .where({ user_id: userId })
+            .where('date', '>=', startDate)
+            .where('date', '<=', endDate)
+            .whereNotNull('habit_id');
+
+        // 3. Calculate stats per habit
+        const breakdown = habits.map(habit => {
+            let scheduledCount = 0;
+            let completedCount = 0;
+
+            // Determine scheduled days (0-6)
+            let scheduledDays = [0, 1, 2, 3, 4, 5, 6];
+            try {
+                if (habit.days_of_week) {
+                    scheduledDays = typeof habit.days_of_week === 'string'
+                        ? JSON.parse(habit.days_of_week)
+                        : habit.days_of_week;
+                }
+            } catch (e) { }
+
+            // Iterate through every day in the period to check schedule
+            const interval = eachDayOfInterval({
+                start: new Date(startDate),
+                end: new Date(endDate)
+            });
+
+            interval.forEach(day => {
+                const dayOfWeek = getDay(day);
+                if (scheduledDays.includes(dayOfWeek)) {
+                    scheduledCount++;
+                    const dateStr = format(day, 'yyyy-MM-dd');
+                    const log = logs.find((l: any) => l.habit_id === habit.id && l.date === dateStr);
+                    if (log && log.completed) {
+                        completedCount++;
+                    }
+                }
+            });
+
+            const adherence = scheduledCount > 0 ? (completedCount / scheduledCount) * 100 : 0;
+
+            return {
+                id: habit.id,
+                name: habit.name,
+                system_id: habit.system_id,
+                adherence: Math.round(adherence),
+                completed: completedCount,
+                scheduled: scheduledCount
+            };
+        });
+
+        // Sort by adherence descending
+        breakdown.sort((a, b) => b.adherence - a.adherence);
+
+        res.json(breakdown);
+    } catch (error) {
+        console.error('Breakdown error:', error);
+        res.status(500).json({ error: 'Failed to fetch habit breakdown' });
+    }
+});
+
 router.get('/habits/:id/analytics', async (req: any, res) => {
     try {
         const habitId = req.params.id;
@@ -415,38 +825,6 @@ router.get('/habits/:id/analytics', async (req: any, res) => {
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch habit analytics' });
-    }
-});
-
-// --- Life Areas (Extended CRUD) ---
-router.post('/life-areas', async (req: any, res) => {
-    try {
-        const id = crypto.randomUUID();
-        const data = { id, user_id: req.user?.id, ...req.body };
-        await db('life_areas').insert(data);
-        const area = await db('life_areas').where({ id }).first();
-        res.status(201).json(area);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create life area' });
-    }
-});
-
-router.put('/life-areas/:id', async (req: any, res) => {
-    try {
-        await db('life_areas').where({ id: req.params.id, user_id: req.user?.id }).update(req.body);
-        const area = await db('life_areas').where({ id: req.params.id }).first();
-        res.json(area);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update life area' });
-    }
-});
-
-router.delete('/life-areas/:id', async (req: any, res) => {
-    try {
-        await db('life_areas').where({ id: req.params.id, user_id: req.user?.id }).delete();
-        res.status(204).send();
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete life area' });
     }
 });
 

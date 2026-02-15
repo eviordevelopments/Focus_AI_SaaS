@@ -5,20 +5,25 @@ import {
     Sparkles, Target, Palette, Hash,
     CheckCircle2
 } from 'lucide-react';
-import { useCreateAreaMutation } from '../../features/api/apiSlice';
+import { useCreateAreaMutation, useUpdateAreaMutation, useDeleteAreaMutation, Area } from '../../features/api/apiSlice';
+import { Trash2 } from 'lucide-react';
 
 interface AreaCreationFlowProps {
     onClose: () => void;
+    editingArea?: Area;
 }
 
-export function AreaCreationFlow({ onClose }: AreaCreationFlowProps) {
+export function AreaCreationFlow({ onClose, editingArea }: AreaCreationFlowProps) {
     const [createArea] = useCreateAreaMutation();
+    const [updateArea] = useUpdateAreaMutation();
+    const [deleteArea] = useDeleteAreaMutation();
+
     const [form, setForm] = useState({
-        name: '',
-        color_hex: '#6366f1',
-        icon_key: 'target',
-        identity_statement: '',
-        importance_rating: 5
+        name: editingArea?.name || '',
+        color_hex: editingArea?.color_hex || '#6366f1',
+        icon_key: editingArea?.icon_key || 'target',
+        identity_statement: editingArea?.identity_statement || '',
+        importance_rating: editingArea?.importance_rating || 5
     });
 
     const COLORS = [
@@ -28,10 +33,22 @@ export function AreaCreationFlow({ onClose }: AreaCreationFlowProps) {
 
     const handleSubmit = async () => {
         try {
-            await createArea(form).unwrap();
+            if (editingArea) {
+                await updateArea({ id: editingArea.id, updates: form }).unwrap();
+            } else {
+                await createArea(form).unwrap();
+            }
             onClose();
         } catch (err) {
-            console.error('Failed to create area:', err);
+            console.error('Failed to save area:', err);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!editingArea) return;
+        if (window.confirm('Are you sure you want to permanently decommission this life sector? All linked systems will remain but become unanchored.')) {
+            await deleteArea(editingArea.id).unwrap();
+            onClose();
         }
     };
 
@@ -56,8 +73,8 @@ export function AreaCreationFlow({ onClose }: AreaCreationFlowProps) {
                         <div className="inline-flex p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 mb-2">
                             <Sparkles size={24} />
                         </div>
-                        <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Forge New Life Area</h2>
-                        <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase">Core Dimension Initialization</p>
+                        <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{editingArea ? 'Optimize Sector' : 'Forge New Life Area'}</h2>
+                        <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase">{editingArea ? 'System Parameter Refinement' : 'Core Dimension Initialization'}</p>
                     </div>
 
                     <div className="space-y-6">
@@ -123,6 +140,15 @@ export function AreaCreationFlow({ onClose }: AreaCreationFlowProps) {
                     </div>
 
                     <div className="flex gap-4">
+                        {editingArea && (
+                            <button
+                                onClick={handleDelete}
+                                className="px-6 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-3xl transition-all"
+                                title="Decommission Area"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        )}
                         <button
                             onClick={onClose}
                             className="px-8 bg-white/5 text-gray-400 font-black uppercase tracking-widest py-5 rounded-3xl hover:bg-white/10 transition-all text-xs"
@@ -134,7 +160,7 @@ export function AreaCreationFlow({ onClose }: AreaCreationFlowProps) {
                             disabled={!form.name}
                             className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-700 text-white font-black uppercase tracking-[0.2em] py-5 rounded-3xl shadow-xl shadow-indigo-900/40 disabled:opacity-30 disabled:grayscale transition-all text-xs flex items-center justify-center gap-2 active:scale-95"
                         >
-                            Forge Area
+                            {editingArea ? 'Update Parameters' : 'Forge Area'}
                             <CheckCircle2 size={16} />
                         </button>
                     </div>

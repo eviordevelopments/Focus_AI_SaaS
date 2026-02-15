@@ -29,7 +29,7 @@ export async function calculateBurnoutScore(userId: string): Promise<BurnoutScor
 
     const recentSessions = await db('sessions')
         .where({ user_id: userId })
-        .where('created_at', '>=', weekAgo.toISOString());
+        .where('start_time', '>=', weekAgo.toISOString());
 
     // 2. Calculate Factors (0-100, where 100 is "High Burnout Risk" or bad state)
 

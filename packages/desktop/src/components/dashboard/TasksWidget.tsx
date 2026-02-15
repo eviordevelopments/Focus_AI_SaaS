@@ -17,18 +17,20 @@ export default function TasksWidget({ tasks, onToggle }: TasksWidgetProps) {
 
     return (
         <GlassCard>
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-lg text-white">Today's Tasks</h3>
-                <span className="text-xs text-gray-400">{doneCount}/{tasks.length} done</span>
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Today's Tasks</h3>
+                </div>
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{doneCount}/{tasks.length} done</span>
             </div>
 
             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                 {tasks.length === 0 && (
-                    <div className="text-center py-8">
-                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 text-emerald-400">
-                            <CheckCircle2 size={24} />
+                    <div className="flex flex-col items-center justify-center py-12 opacity-50">
+                        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 text-emerald-400 border border-white/5 shadow-xl shadow-emerald-500/5">
+                            <CheckCircle2 size={32} />
                         </div>
-                        <p className="text-sm text-gray-400">All tasks completed!</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">All protocols executed</p>
                     </div>
                 )}
 
@@ -36,14 +38,20 @@ export default function TasksWidget({ tasks, onToggle }: TasksWidgetProps) {
                     <div
                         key={task.id}
                         onClick={() => onToggle(task)}
-                        className="group flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
+                        className="group flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 border border-transparent hover:border-white/5 transition-all cursor-pointer"
                     >
-                        {task.status === 'done' ? (
-                            <CheckCircle2 className="text-emerald-500 shrink-0" size={20} />
-                        ) : (
-                            <Circle className="text-gray-500 group-hover:text-emerald-400 shrink-0 transition-colors" size={20} />
-                        )}
-                        <span className={`text-sm truncate ${task.status === 'done' ? 'text-gray-500 line-through' : 'text-gray-200'}`}>
+                        <div className="shrink-0">
+                            {task.status === 'done' ? (
+                                <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                                    <CheckCircle2 size={16} />
+                                </div>
+                            ) : (
+                                <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-gray-600 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 border border-white/5 group-hover:border-indigo-500/20 transition-all">
+                                    <Circle size={16} />
+                                </div>
+                            )}
+                        </div>
+                        <span className={`text-[13px] font-bold truncate flex-1 transition-colors ${task.status === 'done' ? 'text-gray-600 line-through' : 'text-gray-300 group-hover:text-white'}`}>
                             {task.title}
                         </span>
                     </div>

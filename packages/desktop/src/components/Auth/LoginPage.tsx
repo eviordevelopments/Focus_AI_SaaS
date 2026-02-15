@@ -74,7 +74,17 @@ export function LoginPage({ onSwitchToRegister }: { onSwitchToRegister: () => vo
                     <button type="button" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">Forgot password?</button>
                 </div>
 
-                {error && <div className="text-red-400 text-sm p-3 bg-red-500/10 rounded-xl border border-red-500/20">Invalid email or password</div>}
+                {error && (
+                    <div className={`text-sm p-3 rounded-xl border ${'status' in error && error.status === 'FETCH_ERROR'
+                            ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                            : 'text-red-400 bg-red-500/10 border-red-500/20'
+                        }`}>
+                        {'status' in error && error.status === 'FETCH_ERROR'
+                            ? 'Unable to connect to server. Please check your internet or server status.'
+                            : 'Invalid email or password'
+                        }
+                    </div>
+                )}
 
                 <button
                     type="submit"

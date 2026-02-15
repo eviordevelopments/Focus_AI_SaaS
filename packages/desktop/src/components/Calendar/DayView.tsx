@@ -14,36 +14,75 @@ export default function DayView({ date, tasks, habits, onTimeClick, onEventClick
     const hours = Array.from({ length: 24 }).map((_, i) => i); // 0 to 23
     const [selectedTask, setSelectedTask] = useState<any | null>(null);
 
-    // Filter tasks for this day
-    const dayTasks = useMemo(() => {
-        return tasks.filter(t => {
+    const getSafeDate = (val: any) => {
+        if (!val) return null;
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? null : d;
+    };
+
+    // Filter tasks and habits for this day
+    const dayEvents = useMemo(() => {
+        const dayStr = format(date, 'yyyy-MM-dd');
+        const dayOfWeek = date.getDay();
+
+        const dayTasks = tasks.filter(t => {
             const targetDate = t.start_time || t.due_date;
-            if (targetDate && isSameDay(new Date(targetDate), date)) return true;
+            const parsedTarget = getSafeDate(targetDate);
+            if (parsedTarget && isSameDay(parsedTarget, date)) return true;
 
             if (t.is_recurring && t.recurring_days) {
                 try {
                     const days = typeof t.recurring_days === 'string' ? JSON.parse(t.recurring_days) : t.recurring_days;
                     const todayDay = format(date, 'EEE');
                     if (Array.isArray(days) && days.includes(todayDay)) {
-                        const start = new Date(t.start_time || t.created_at || new Date());
-                        return start <= date;
+                        const start = getSafeDate(t.start_time || t.created_at) || new Date();
+                        return startOfDay(start) <= startOfDay(date);
                     }
-                } catch (e) {
-                    return false;
-                }
+                } catch (e) { return false; }
             }
             return false;
         });
-    }, [tasks, date]);
+
+        const dayHabits = habits.filter(h => {
+            if (h.is_active === false) return false;
+            let days = h.days_of_week;
+            if (typeof days === 'string') {
+                try { days = JSON.parse(days); } catch { days = []; }
+            }
+            return Array.isArray(days) && days.includes(dayOfWeek);
+        });
+
+        return [
+            ...dayTasks.map(t => ({ ...t, calendarType: 'task' })),
+            ...dayHabits.map(h => ({
+                ...h,
+                title: h.name,
+                color: h.color_hex || '#6366f1',
+                calendarType: 'habit',
+                isDone: (h.completed_dates || []).includes(dayStr)
+            }))
+        ].sort((a, b) => {
+            const timeA = a.start_time || '00:00';
+            const timeB = b.start_time || '00:00';
+            return timeA.localeCompare(timeB);
+        });
+    }, [tasks, habits, date]);
 
     // Calculate positioning
     const getTaskStyle = (task: any) => {
-        const start = task.start_time ? new Date(task.start_time) : new Date(task.due_date);
+        const start = getSafeDate(task.start_time) || getSafeDate(task.due_date);
+        if (!start) return { top: '0px', height: '0px', display: 'none' };
+
         const startHour = getHours(start);
         const startMin = getMinutes(start);
-        const durationMinutes = task.end_time
-            ? differenceInMinutes(new Date(task.end_time), start)
-            : 60;
+
+        let durationMinutes = 60;
+        if (task.end_time) {
+            const end = getSafeDate(task.end_time);
+            if (end) {
+                durationMinutes = Math.max(differenceInMinutes(end, start), 15);
+            }
+        }
 
         const top = (startHour * 64) + (startMin * (64 / 60));
         const height = (durationMinutes * (64 / 60));
@@ -91,31 +130,34 @@ export default function DayView({ date, tasks, habits, onTimeClick, onEventClick
 
                     {/* Events */}
                     <div className="absolute left-16 right-4 top-0 bottom-0 pointer-events-none">
-                        {dayTasks.map((task, i) => {
-                            const style = getTaskStyle(task);
-                            const isActive = selectedTask?.id === task.id;
+                        {dayEvents.map((item, i) => {
+                            const style = getTaskStyle(item);
+                            const isActive = selectedTask?.id === item.id;
+                            const displayTime = getSafeDate(item.start_time || item.due_date);
 
                             return (
                                 <div
-                                    key={task.id || i}
-                                    className={`absolute left-0 right-0 rounded-lg p-2 border shadow-lg cursor-pointer pointer-events-auto hover:brightness-110 hover:scale-[1.01] transition-all overflow-hidden ${isActive ? 'ring-2 ring-white z-20' : 'z-10'}`}
+                                    key={item.id || i}
+                                    className={`absolute left-0 right-0 rounded-lg p-2 border shadow-lg cursor-pointer pointer-events-auto hover:brightness-110 hover:scale-[1.01] transition-all overflow-hidden ${isActive ? 'ring-2 ring-white z-20' : 'z-10'} ${item.isDone ? 'opacity-50 grayscale' : ''}`}
                                     style={{
                                         ...style,
-                                        backgroundColor: task.color || '#6366f1',
+                                        backgroundColor: item.color || '#6366f1',
                                         borderColor: 'rgba(255,255,255,0.2)',
+                                        textDecoration: item.isDone ? 'line-through' : 'none'
                                     }}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setSelectedTask(task);
+                                        setSelectedTask(item);
                                     }}
-                                    onMouseEnter={() => setSelectedTask(task)}
+                                    onMouseEnter={() => setSelectedTask(item)}
                                 >
-                                    <div className="font-bold text-white text-sm shadow-black drop-shadow-md truncate">
-                                        {task.title}
+                                    <div className="font-bold text-white text-sm shadow-black drop-shadow-sm truncate flex items-center justify-between">
+                                        <span>{item.title}</span>
+                                        {item.calendarType === 'habit' && <div className="w-2 h-2 rounded-full bg-white/40" />}
                                     </div>
                                     <div className="text-xs text-white/80 truncate flex items-center gap-1">
-                                        {format(new Date(task.start_time || task.due_date), 'h:mm a')}
-                                        {task.location && <span>• {task.location}</span>}
+                                        {displayTime ? format(displayTime, 'h:mm a') : 'All Day'}
+                                        {item.location && <span>• {item.location}</span>}
                                     </div>
                                 </div>
                             );
@@ -148,8 +190,12 @@ export default function DayView({ date, tasks, habits, onTimeClick, onEventClick
                             <div className="flex items-center gap-2 text-xs text-gray-400 mb-4">
                                 <Clock size={12} />
                                 <span>
-                                    {format(new Date(selectedTask.start_time || selectedTask.due_date), 'h:mm a')}
-                                    {selectedTask.end_time && ` - ${format(new Date(selectedTask.end_time), 'h:mm a')}`}
+                                    {(() => {
+                                        const s = getSafeDate(selectedTask.start_time || selectedTask.due_date);
+                                        const e = getSafeDate(selectedTask.end_time);
+                                        if (!s) return 'All Day';
+                                        return `${format(s, 'h:mm a')}${e ? ` - ${format(e, 'h:mm a')}` : ''}`;
+                                    })()}
                                 </span>
                             </div>
 
@@ -173,19 +219,29 @@ export default function DayView({ date, tasks, habits, onTimeClick, onEventClick
                                 )}
                             </div>
 
-                            {selectedTask.session_config && (
+                            <div className="flex gap-2">
+                                {selectedTask.session_config && (
+                                    <button
+                                        onClick={() => {
+                                            onEventClick && onEventClick(selectedTask);
+                                            setSelectedTask(null);
+                                        }}
+                                        className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-95 group"
+                                    >
+                                        <Zap size={14} className="fill-current" />
+                                        Focus
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => {
                                         onEventClick && onEventClick(selectedTask);
                                         setSelectedTask(null);
                                     }}
-                                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-95 group"
+                                    className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-xs font-bold transition-all"
                                 >
-                                    <Zap size={14} className="fill-current" />
-                                    Start Focus Session
-                                    <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                                    Edit Protocol
                                 </button>
-                            )}
+                            </div>
                         </div>
                     )}
 

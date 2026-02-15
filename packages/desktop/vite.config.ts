@@ -5,7 +5,7 @@ import electron from 'vite-plugin-electron/simple'
 export default defineConfig({
     plugins: [
         react(),
-        electron({
+        process.env.ELECTRON === 'true' && electron({
             main: {
                 entry: 'electron/main.ts',
             },
@@ -13,5 +13,5 @@ export default defineConfig({
                 input: 'electron/preload.ts',
             },
         }),
-    ],
+    ].filter(Boolean),
 })

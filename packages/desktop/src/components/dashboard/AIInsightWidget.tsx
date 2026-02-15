@@ -1,4 +1,5 @@
 import { Lightbulb, ArrowRight } from 'lucide-react';
+import GlassCard from '../ui/GlassCard';
 
 interface AIInsightWidgetProps {
     burnoutScore: number;
@@ -19,27 +20,30 @@ export default function AIInsightWidget({ burnoutScore, healthEntry }: AIInsight
     }
 
     return (
-        <div className="relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-900/40 to-blue-900/20 backdrop-blur-md p-6">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-
-            <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 shadow-lg shadow-indigo-500/10">
-                    <Lightbulb size={20} />
+        <GlassCard className="border-indigo-500/20" glowColor="bg-indigo-500/10" padding="p-6" fullHeight={false}>
+            <div className="flex items-center gap-6">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 flex items-center justify-center text-indigo-400 shrink-0 shadow-2xl border border-indigo-500/20">
+                    <Lightbulb size={28} className="drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
                 </div>
 
                 <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-bold text-indigo-400 tracking-wider">AI INSIGHT</span>
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px] font-black text-indigo-400 tracking-[0.3em] uppercase opacity-80">Intelligence Protocol</span>
+                        <div className="flex gap-1">
+                            <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse" />
+                            <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse delay-75" />
+                            <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse delay-150" />
+                        </div>
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-1">{title}</h3>
-                    <p className="text-gray-300 text-sm mb-4">{message}</p>
+                    <h3 className="text-xl font-black text-white mb-1 italic uppercase tracking-tighter">{title}</h3>
+                    <p className="text-gray-400 text-[13px] font-medium leading-relaxed line-clamp-2 mb-4">{message}</p>
 
-                    <button className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg py-2 px-4 text-sm text-gray-300 flex items-center justify-center gap-2 transition-all group">
-                        Chat with Deepmind
-                        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    <button className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors group/btn">
+                        Consult Deepmind Data
+                        <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
                     </button>
                 </div>
             </div>
-        </div>
+        </GlassCard>
     );
 }

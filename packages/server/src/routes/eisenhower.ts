@@ -68,6 +68,30 @@ router.post('/items', async (req: any, res) => {
             snapshot = await db('eisenhower_snapshots').where({ id: snapshotId }).first();
         }
 
+        // Determine Priority from Quadrant
+        let priority = 4;
+        if (quadrant === 'Q1_DO') priority = 1;
+        if (quadrant === 'Q2_SCHEDULE') priority = 2;
+        if (quadrant === 'Q3_DELEGATE') priority = 3;
+
+        // If no task_id provided, create a task in the main system
+        let linkedTaskId = task_id;
+        if (!linkedTaskId) {
+            const [newTask] = await db('tasks')
+                .insert({
+                    user_id: userId,
+                    title,
+                    description: description || '',
+                    status: 'todo',
+                    priority,
+                    due_date: quadrant === 'Q1_DO' ? activeDate : null, // Set due date to today for Q1
+                    created_at: db.fn.now()
+                })
+                .returning('id');
+
+            linkedTaskId = newTask.id;
+        }
+
         const itemId = crypto.randomUUID();
         await db('eisenhower_items')
             .insert({
@@ -76,7 +100,7 @@ router.post('/items', async (req: any, res) => {
                 title,
                 description,
                 quadrant,
-                task_id,
+                task_id: linkedTaskId,
                 position: 0
             });
 

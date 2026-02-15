@@ -38,6 +38,22 @@ export function SystemsView() {
         systems: systems.filter(s => s.life_area_id === area.id)
     })).filter(group => group.systems.length > 0);
 
+    // Systems without areas
+    const unassignedSystems = systems.filter(s =>
+        !s.life_area_id || !areas.find(a => a.id === s.life_area_id)
+    );
+
+    if (unassignedSystems.length > 0) {
+        systemsByArea.push({
+            id: 'unassigned',
+            name: 'Unassigned Circuits',
+            description: 'Systems not yet anchored to a specific life area.',
+            color_hex: '#4b5563', // gray-600
+            systems: unassignedSystems,
+            identity_statement: 'PROTOCOLS IN TRANSIT'
+        } as any);
+    }
+
     // Calculate overall statistics
     const totalSystems = systems.length;
     const totalXP = gamifiedDashboard?.totalXP || 0;
@@ -187,8 +203,8 @@ export function SystemsView() {
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex items-center gap-2">
                                                 <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${system.difficulty === 'hard' ? 'bg-rose-500/20 text-rose-400' :
-                                                        system.difficulty === 'medium' ? 'bg-amber-500/20 text-amber-400' :
-                                                            'bg-emerald-500/20 text-emerald-400'
+                                                    system.difficulty === 'medium' ? 'bg-amber-500/20 text-amber-400' :
+                                                        'bg-emerald-500/20 text-emerald-400'
                                                     }`}>
                                                     {system.difficulty || 'Medium'}
                                                 </span>

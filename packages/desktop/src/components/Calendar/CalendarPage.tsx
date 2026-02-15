@@ -5,7 +5,7 @@ import MonthView from './MonthView';
 import WeekView from './WeekView';
 import DayView from './DayView';
 import EventModal from './EventModal';
-import { useGetTasksQuery, useGetHabitsQuery } from '../../features/api/apiSlice';
+import { useGetTasksQuery, useGetHabitsQuery, useGetSystemsQuery, useGetAreasQuery } from '../../features/api/apiSlice';
 
 import { useDispatch } from 'react-redux';
 import { setActiveTab, setPendingSessionConfig } from '../../features/ui/uiSlice';
@@ -22,11 +22,9 @@ export default function CalendarPage() {
 
     // Data
     const { data: tasks = [] } = useGetTasksQuery();
-    // Assuming we want habits. MVP: pass user ID manually or context.
-    // Ideally user ID is from auth slice. Let's trust useGetHabitsQuery handles 'undefined' gracefully or pass null.
-    // Wait, the hook requires an arg if we strictly typed it? checking apiSlice..
-    // It accepts string | void.
     const { data: habits = [] } = useGetHabitsQuery({});
+    const { data: systems = [] } = useGetSystemsQuery();
+    const { data: areas = [] } = useGetAreasQuery();
 
     const handlePrev = () => {
         if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
@@ -49,8 +47,13 @@ export default function CalendarPage() {
         setIsSyncing(true);
         try {
             // @ts-ignore
-            const events = await window.electron.syncAppleCalendar();
-            setExternalEvents(events);
+            if (window.electron && window.electron.syncAppleCalendar) {
+                // @ts-ignore
+                const events = await window.electron.syncAppleCalendar();
+                setExternalEvents(events);
+            } else {
+                alert('Mac Calendar sync is only available in the Desktop App. For Web, Google Calendar integration is coming soon!');
+            }
         } catch (error) {
             console.error(error);
             alert('Failed to sync. Please ensure you grant Calendar permissions to Terminal/App.');
@@ -60,15 +63,64 @@ export default function CalendarPage() {
     };
 
     // Merge internal tasks and external events for display
-    const mappedExternalEvents = externalEvents.map((e: any) => ({
-        id: `ext-${e.title}-${e.start}`,
-        title: e.title,
-        due_date: e.start.split('T')[0],
-        start_time: e.start,
-        status: 'external'
-    }));
+    const mappedExternalEvents = externalEvents.map((e: any) => {
+        const startDateString = e.start || '';
+        return {
+            id: `ext-${e.title}-${startDateString}`,
+            title: e.title,
+            due_date: startDateString.split('T')[0] || format(new Date(), 'yyyy-MM-dd'),
+            start_time: startDateString,
+            status: 'external'
+        };
+    });
 
-    const displayTasks = [...tasks, ...mappedExternalEvents];
+    // Map systems to calendar events
+    const mappedSystems = systems.flatMap((system: any) => {
+        const area = areas.find((a: any) => a.id === system.life_area_id);
+
+        // Convert HH:mm to full ISO date for today to prevent "Invalid Date"
+        const getFullDate = (timeStr: string) => {
+            if (!timeStr || !timeStr.includes(':')) return null;
+            const [h, m] = timeStr.split(':');
+            const d = new Date();
+            d.setHours(parseInt(h), parseInt(m), 0, 0);
+            return d.toISOString();
+        };
+
+        // scheduled_days is typically [0,1,2,3,4,5,6] or similar
+        let recurringDays: string[] = [];
+        try {
+            const days = typeof system.scheduled_days === 'string' ? JSON.parse(system.scheduled_days) : system.scheduled_days;
+            if (Array.isArray(days)) {
+                const dayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                recurringDays = days.map(d => dayMap[d]);
+            }
+        } catch (e) {
+            recurringDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        }
+
+        return {
+            id: `system-${system.id}`,
+            title: system.name,
+            due_date: system.start_time ? `2000-01-01T${system.start_time}` : undefined, // Placeholder to avoid 'today' lock
+            start_time: getFullDate(system.start_time),
+            end_time: getFullDate(system.end_time),
+            location: system.location,
+            link: system.link,
+            color: area?.color_hex || '#6366f1',
+            type: 'system',
+            focus_session: system.focus_session,
+            system_id: system.id,
+            is_recurring: true,
+            recurring_days: recurringDays,
+            session_config: system.focus_session ? JSON.stringify({
+                type: 'focus',
+                duration: system.duration_minutes || 30
+            }) : null
+        };
+    });
+
+    const displayTasks = [...tasks, ...mappedExternalEvents, ...mappedSystems];
 
     // Handlers
     const handleDateClick = (date: Date) => {
@@ -82,28 +134,35 @@ export default function CalendarPage() {
         setIsModalOpen(true);
     };
 
+    const [selectedTask, setSelectedTask] = useState<any>(null);
+
     const handleEventClick = (task: any) => {
+        if (task.id?.startsWith('ext-')) {
+            alert(`External Event: ${task.title}\n(Read-only)`);
+            return;
+        }
+
         if (task.session_config) {
             try {
                 const config = JSON.parse(task.session_config);
-                if (confirm(`Start "${config.type}" session for "${task.title}"?`)) {
+                if (confirm(`Begin "${config.type}" protocol for "${task.title}"?`)) {
                     dispatch(setPendingSessionConfig({
                         type: config.type,
                         duration: config.duration || 30,
                         taskId: task.id
                     }));
                     dispatch(setActiveTab('deepwork'));
+                    return;
                 }
-            } catch (e) {
-                console.error("Invalid session config", e);
-                alert(`Event: ${task.title}`);
-            }
-        } else {
-            alert(`Event: ${task.title}\nTime: ${task.start_time || task.due_date}`);
+            } catch (e) { }
         }
+
+        setSelectedTask(task);
+        setIsModalOpen(true);
     };
 
     const openNewEventModal = () => {
+        setSelectedTask(null);
         setModalInitialDate(currentDate);
         setModalInitialStartTime(undefined);
         setIsModalOpen(true);
@@ -112,6 +171,7 @@ export default function CalendarPage() {
     return (
         <div className="flex flex-col h-full space-y-4 p-6 relative">
             {/* Header / Controls */}
+            {/* ... (Header content) */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-black/20 p-4 rounded-2xl backdrop-blur-md border border-white/5 z-10">
 
                 {/* Left: Title & Date */}
@@ -226,9 +286,13 @@ export default function CalendarPage() {
             {/* Modal */}
             <EventModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setSelectedTask(null);
+                }}
                 initialDate={modalInitialDate}
                 initialStartTime={modalInitialStartTime}
+                editingTask={selectedTask}
             />
         </div>
     );

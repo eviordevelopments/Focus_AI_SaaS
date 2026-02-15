@@ -1,33 +1,40 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
     Zap, Target, Clock, Calendar as CalendarIcon,
     X, CheckCircle2
 } from 'lucide-react';
-import { useCreateSystemMutation, Area } from '../../features/api/apiSlice';
+import { useCreateSystemMutation, useUpdateSystemMutation, useGetQuarterlyIdentitiesQuery, useGetProjectsQuery, Area } from '../../features/api/apiSlice';
 
 interface SystemCreationFlowProps {
     onClose: () => void;
     lifeAreaId: string;
     areas: Area[];
+    editingId?: string;
+    initialData?: any;
 }
 
-export function SystemCreationFlow({ onClose, lifeAreaId, areas }: SystemCreationFlowProps) {
+export function SystemCreationFlow({ onClose, lifeAreaId, areas, editingId, initialData }: SystemCreationFlowProps) {
     const [createSystem] = useCreateSystemMutation();
+    const [updateSystem] = useUpdateSystemMutation(); // Need to add this to apiSlice if missing
+    const { data: identities = [] } = useGetQuarterlyIdentitiesQuery();
+    const { data: projects = [] } = useGetProjectsQuery({ lifeAreaId });
     const area = areas.find(a => a.id === lifeAreaId);
 
     const [form, setForm] = useState({
-        name: '',
-        life_area_id: lifeAreaId,
-        description: '',
-        cue: '',
-        routine_hard: '',
-        routine_easy: '',
-        reward: '',
-        difficulty: 'medium',
-        duration_minutes: 30,
-        supports_identity: '',
-        scheduled_days: ['Mon', 'Wed', 'Fri']
+        name: initialData?.name || '',
+        life_area_id: initialData?.life_area_id || lifeAreaId,
+        description: initialData?.description || '',
+        cue: initialData?.cue || '',
+        routine_hard: initialData?.routine_hard || '',
+        routine_easy: initialData?.routine_easy || '',
+        reward: initialData?.reward || '',
+        difficulty: initialData?.difficulty || 'medium',
+        duration_minutes: initialData?.duration_minutes || 30,
+        supports_identity: initialData?.supports_identity || '',
+        identity_shift_id: initialData?.identity_shift_id || '',
+        project_id: initialData?.project_id || '',
+        scheduled_days: initialData?.scheduled_days ? (typeof initialData.scheduled_days === 'string' ? JSON.parse(initialData.scheduled_days) : initialData.scheduled_days) : ['Mon', 'Wed', 'Fri']
     });
 
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -41,12 +48,29 @@ export function SystemCreationFlow({ onClose, lifeAreaId, areas }: SystemCreatio
         }));
     };
 
+    const handleIdentityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const id = e.target.value;
+        const identityObj = identities.find((i: any) => i.id === id);
+        setForm({
+            ...form,
+            identity_shift_id: id,
+            supports_identity: identityObj?.primary_identity || ''
+        });
+    };
+
     const handleSubmit = async () => {
         try {
-            await createSystem({
-                ...form,
-                scheduled_days: form.scheduled_days
-            }).unwrap();
+            if (editingId) {
+                await updateSystem({
+                    id: editingId,
+                    updates: form
+                }).unwrap();
+            } else {
+                await createSystem({
+                    ...form,
+                    scheduled_days: form.scheduled_days
+                }).unwrap();
+            }
             onClose();
         } catch (err) {
             console.error(err);
@@ -75,7 +99,7 @@ export function SystemCreationFlow({ onClose, lifeAreaId, areas }: SystemCreatio
                             <div className="inline-flex p-3 bg-yellow-500/10 rounded-2xl text-yellow-400 mb-2">
                                 <Zap size={24} />
                             </div>
-                            <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Initialize System</h2>
+                            <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{editingId ? 'Refine System' : 'Initialize System'}</h2>
                             <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase italic flex items-center gap-2">
                                 <Target size={12} className="text-indigo-500" />
                                 Forging in {area?.name || 'Unknown Area'}
@@ -95,16 +119,47 @@ export function SystemCreationFlow({ onClose, lifeAreaId, areas }: SystemCreatio
                                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-black text-xl focus:ring-2 focus:ring-yellow-500/50 outline-none transition-all placeholder:text-gray-800"
                                 placeholder="e.g. MORNING VELOCITY"
                             />
-                            <div className="flex gap-4">
-                                <div className="flex-1 p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
+                            <div className="flex flex-col gap-3 mt-3">
+                                <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
                                     <span className="text-indigo-400 font-bold text-xs uppercase tracking-widest whitespace-nowrap">I am a</span>
-                                    <input
-                                        type="text"
-                                        className="bg-transparent text-white font-bold placeholder-white/10 focus:outline-none flex-1 border-b border-white/10 focus:border-indigo-400 transition-colors text-sm"
-                                        placeholder="Writer, Athlete, Sage..."
-                                        value={form.supports_identity}
-                                        onChange={e => setForm({ ...form, supports_identity: e.target.value })}
-                                    />
+                                    {identities.length > 0 ? (
+                                        <select
+                                            className="bg-transparent text-white font-bold focus:outline-none flex-1 border-b border-white/10 focus:border-indigo-400 transition-colors text-sm appearance-none cursor-pointer"
+                                            value={form.identity_shift_id}
+                                            onChange={handleIdentityChange}
+                                        >
+                                            <option value="" className="bg-[#0c0c0e] text-gray-400">Select Core Identity...</option>
+                                            {identities.map((identity: any) => (
+                                                <option key={identity.id} value={identity.id} className="bg-[#0c0c0e] text-white italic">
+                                                    {identity.primary_identity} ({identity.quarter} {identity.year})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            className="bg-transparent text-white font-bold placeholder-white/10 focus:outline-none flex-1 border-b border-white/10 focus:border-indigo-400 transition-colors text-sm"
+                                            placeholder="Forge identities in Planning first..."
+                                            value={form.supports_identity}
+                                            onChange={e => setForm({ ...form, supports_identity: e.target.value })}
+                                        />
+                                    )}
+                                </div>
+
+                                <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
+                                    <span className="text-emerald-400 font-bold text-xs uppercase tracking-widest whitespace-nowrap">MISSION</span>
+                                    <select
+                                        className="bg-transparent text-white font-bold focus:outline-none flex-1 border-b border-white/10 focus:border-emerald-400 transition-colors text-sm appearance-none cursor-pointer"
+                                        value={form.project_id}
+                                        onChange={e => setForm({ ...form, project_id: e.target.value })}
+                                    >
+                                        <option value="" className="bg-[#0c0c0e] text-gray-400">Standalone System</option>
+                                        {projects.map((p: any) => (
+                                            <option key={p.id} value={p.id} className="bg-[#0c0c0e] text-white">
+                                                {p.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
                         </section>
@@ -193,22 +248,23 @@ export function SystemCreationFlow({ onClose, lifeAreaId, areas }: SystemCreatio
                         </div>
                     </div>
 
-                    <div className="flex gap-4 pt-4">
-                        <button
-                            onClick={onClose}
-                            className="px-8 bg-white/5 text-gray-400 font-black uppercase tracking-widest py-5 rounded-3xl hover:bg-white/10 transition-all text-xs"
-                        >
-                            Abort
-                        </button>
-                        <button
-                            onClick={handleSubmit}
-                            disabled={!form.name}
-                            className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-black uppercase tracking-[0.2em] py-5 rounded-3xl shadow-xl shadow-amber-900/40 disabled:opacity-30 transition-all text-xs flex items-center justify-center gap-2 active:scale-95"
-                        >
-                            Initialize System
-                            <CheckCircle2 size={16} />
-                        </button>
-                    </div>
+                </div>
+
+                <div className="flex gap-4 pt-8 border-t border-white/5">
+                    <button
+                        onClick={onClose}
+                        className="px-8 bg-white/5 text-gray-400 font-black uppercase tracking-widest py-5 rounded-3xl hover:bg-white/10 transition-all text-xs"
+                    >
+                        Abort
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!form.name}
+                        className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-black uppercase tracking-[0.2em] py-5 rounded-3xl shadow-xl shadow-amber-900/40 disabled:opacity-30 transition-all text-xs flex items-center justify-center gap-2 active:scale-95"
+                    >
+                        {editingId ? 'Update System' : 'Initialize System'}
+                        <CheckCircle2 size={16} />
+                    </button>
                 </div>
             </motion.div>
         </div>

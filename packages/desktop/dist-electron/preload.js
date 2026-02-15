@@ -1,6 +1,1 @@
-"use strict";
-const electron = require("electron");
-electron.contextBridge.exposeInMainWorld("electronAPI", {
-  // expose methods here
-  ping: () => electron.ipcRenderer.invoke("ping")
-});
+"use strict";const e=require("electron");e.contextBridge.exposeInMainWorld("electronAPI",{ping:()=>e.ipcRenderer.invoke("ping")});

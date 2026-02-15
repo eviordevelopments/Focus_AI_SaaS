@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGetAreasQuery, useGetSystemsQuery, Area } from '../../features/api/apiSlice';
-import { Target, Heart, Briefcase, GraduationCap, Globe, Users, Coins, Sparkles, ChevronRight, Activity } from 'lucide-react';
+import { Target, Heart, Briefcase, GraduationCap, Globe, Users, Coins, Sparkles, ChevronRight, Activity, Settings2 } from 'lucide-react';
 import { AreaCreationFlow } from './AreaCreationFlow';
 import { LifeAreaWorkspace } from './LifeAreaWorkspace';
 import { AnimatePresence } from 'framer-motion';
@@ -11,6 +11,7 @@ export function LifeAreasGrid() {
     const { data: systems = [] } = useGetSystemsQuery();
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
+    const [editingArea, setEditingArea] = useState<Area | null>(null);
 
     const getIcon = (iconName: string) => {
         switch (iconName?.toLowerCase()) {
@@ -63,15 +64,25 @@ export function LifeAreasGrid() {
                                 <div className="p-4 bg-white/5 rounded-2xl border border-white/5 group-hover:bg-indigo-500/10 group-hover:border-indigo-500/20 transition-all">
                                     {getIcon(area.name)}
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Alignment</span>
-                                    <span className="text-lg font-bold text-white">{alignment}%</span>
+                                <div className="flex flex-col items-end gap-2">
+                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setEditingArea(area); setIsCreateOpen(true); }}
+                                            className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-500 hover:text-white transition-all"
+                                        >
+                                            <Settings2 size={14} />
+                                        </button>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Alignment</span>
+                                        <span className="text-lg font-bold text-white">{alignment}%</span>
+                                    </div>
                                 </div>
                             </div>
 
                             <h3 className="text-xl font-bold text-white mb-2">{area.name}</h3>
                             <p className="text-sm text-gray-500 line-clamp-2 mb-6">
-                                {area.description || `Optimizing your systems for ${area.name.toLowerCase()}.`}
+                                {area.identity_statement || `Optimizing your systems for ${area.name.toLowerCase()}.`}
                             </p>
 
                             <div className="space-y-4 mb-8">
@@ -109,7 +120,13 @@ export function LifeAreasGrid() {
 
             <AnimatePresence>
                 {isCreateOpen && (
-                    <AreaCreationFlow onClose={() => setIsCreateOpen(false)} />
+                    <AreaCreationFlow
+                        onClose={() => {
+                            setIsCreateOpen(false);
+                            setEditingArea(null);
+                        }}
+                        editingArea={editingArea || undefined}
+                    />
                 )}
             </AnimatePresence>
         </div>

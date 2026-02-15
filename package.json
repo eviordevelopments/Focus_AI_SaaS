@@ -7,6 +7,7 @@
   "scripts": {
     "dev:server": "npm run dev -w @focus-ai/server",
     "dev:desktop": "npm run dev -w @focus-ai/desktop",
+    "dev:web": "npm run dev:web -w @focus-ai/desktop",
     "build": "npm run build --workspaces --if-present"
   }
 }
