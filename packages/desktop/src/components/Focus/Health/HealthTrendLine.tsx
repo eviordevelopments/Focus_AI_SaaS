@@ -53,7 +53,7 @@ export function HealthTrendLine({ data, metric, label, color, unit }: HealthTren
                 <div>
                     <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{label}</div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-white italic">{latestValue.toFixed(1)}</span>
+ <span className="text-2xl font-black text-white ">{latestValue.toFixed(1)}</span>
                         <span className="text-xs text-gray-500 font-bold">{unit}</span>
                     </div>
                 </div>

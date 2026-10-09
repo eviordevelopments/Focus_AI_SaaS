@@ -31,7 +31,7 @@ export function GalleryView({ area, systems, habits, projects, resources, notes,
                             <ShieldCheck size={24} />
                         </div>
                         <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em]">Compliance Index</h3>
-                        <p className="text-5xl font-black italic tracking-tighter text-white mt-2">88%</p>
+ <p className="text-5xl font-black tracking-tighter text-white mt-2">88%</p>
                     </div>
                     <div className="flex gap-2 text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
                         <Zap size={12} fill="currentColor" /> Outperforming targets

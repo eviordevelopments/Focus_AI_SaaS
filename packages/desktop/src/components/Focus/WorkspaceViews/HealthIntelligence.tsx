@@ -51,7 +51,7 @@ export function HealthIntelligence({ data }: HealthIntelligenceProps) {
                             <Activity size={32} className="text-indigo-400" />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Daily Check-In</h3>
+ <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Daily Check-In</h3>
                             <p className="text-xs text-gray-400 uppercase tracking-widest mt-1">Track your health metrics today</p>
                         </div>
                     </div>
@@ -83,7 +83,7 @@ export function HealthIntelligence({ data }: HealthIntelligenceProps) {
                         </div>
                         <div className="space-y-1">
                             <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest block">{m.label}</span>
-                            <span className="text-2xl font-black text-white italic">{m.value}</span>
+ <span className="text-2xl font-black text-white ">{m.value}</span>
                         </div>
                     </motion.div>
                 ))}
@@ -98,7 +98,7 @@ export function HealthIntelligence({ data }: HealthIntelligenceProps) {
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-2">
                         <TrendingUp size={14} className="text-emerald-400" /> Longitudinal Trends
                     </label>
-                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">30-Day Health Trajectory</h3>
+ <h3 className="text-2xl font-black text-white uppercase tracking-tighter">30-Day Health Trajectory</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -118,7 +118,7 @@ export function HealthIntelligence({ data }: HealthIntelligenceProps) {
                         <HealthTrendLine data={data.slice(0, 30).reverse()} metric="screen_time_hours" label="Screen Time" color="#06b6d4" unit="h" />
                     </div>
                     <div className="p-6 bg-gradient-to-br from-indigo-500/10 to-emerald-500/10 rounded-2xl border border-indigo-500/20 flex flex-col justify-center items-center text-center">
-                        <div className="text-4xl font-black text-white italic mb-2">{data.length}</div>
+ <div className="text-4xl font-black text-white mb-2">{data.length}</div>
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Entries</div>
                         <button onClick={() => setShowLoggingModal(true)} className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-white transition-all">
                             Log Today
@@ -134,7 +134,7 @@ export function HealthIntelligence({ data }: HealthIntelligenceProps) {
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-2">
                             <TrendingUp size={14} className="text-indigo-400" /> Biometric Correlation
                         </label>
-                        <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Optimization Landscape</h3>
+ <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Optimization Landscape</h3>
                     </div>
                     <div className="flex gap-2">
                         <div className="flex gap-1 bg-white/5 rounded-xl p-1 border border-white/5">

@@ -64,7 +64,7 @@ export function TenYearVision() {
                     onBlur={() => !text && setIsFocused(false)} // Keep focused if has text? No, standard blur.
                 />
 
-                <p className="text-xs text-gray-500 mt-4 italic flex items-center gap-1">
+ <p className="text-xs text-gray-500 mt-4 flex items-center gap-1">
                     This is your 'North Star' for all quarterly decisions.
                 </p>
             </div>

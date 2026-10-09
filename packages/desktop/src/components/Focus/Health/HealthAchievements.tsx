@@ -44,7 +44,7 @@ export function HealthAchievements() {
                             </div>
                         </div>
                         <div className="text-right">
-                            <div className="text-2xl font-black text-white italic">{streakDays}</div>
+ <div className="text-2xl font-black text-white ">{streakDays}</div>
                             <div className="text-[10px] text-gray-500 uppercase tracking-widest">Day Streak</div>
                         </div>
                     </div>

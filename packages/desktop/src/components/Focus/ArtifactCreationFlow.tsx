@@ -67,7 +67,7 @@ export function ArtifactCreationFlow({ type, lifeAreaId, onClose, areas }: Artif
                             <h2 className="text-3xl font-black text-white tracking-tighter uppercase">
                                 {type === 'books' ? 'Catalog Book' : 'Capture Note'}
                             </h2>
-                            <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase italic">
+ <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase ">
                                 Knowledge Unit for {area?.name || 'General'}
                             </p>
                         </div>

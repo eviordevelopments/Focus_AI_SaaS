@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task } from '../features/api/apiSlice';
-import { FileText } from 'lucide-react';
+import { Task, useDeleteTaskMutation, useDeleteHabitMutation, useDeleteSystemMutation } from '../features/api/apiSlice';
+import { FileText, Trash2 } from 'lucide-react';
 
 interface TaskCardProps {
     task: Task;
@@ -9,6 +9,10 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, isOverlay }: TaskCardProps) {
+    const [deleteTask] = useDeleteTaskMutation();
+    const [deleteHabit] = useDeleteHabitMutation();
+    const [deleteSystem] = useDeleteSystemMutation();
+
     const {
         attributes,
         listeners,
@@ -38,13 +42,24 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
     const priorityLabel = task.priority >= 4 ? 'High Priority' :
         task.priority === 3 ? 'Medium Priority' : 'No Priority';
 
-    // Status Badge (shown if not grouped by status, or just always for detail)
+    // Status Badge
     const statusConfig = {
         todo: { bg: 'bg-gray-500/20', text: 'text-gray-400', label: 'To Do' },
         in_progress: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'In Progress' },
         done: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Done' }
     };
     const s = statusConfig[task.status] || statusConfig.todo;
+
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (task.is_habit) {
+            deleteHabit(task.original_id || '');
+        } else if (task.is_system) {
+            deleteSystem(task.original_id || '');
+        } else {
+            deleteTask(task.id);
+        }
+    };
 
     return (
         <div
@@ -61,17 +76,30 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
             `}
         >
             {/* Header / Badges */}
-            <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
-                <span className={`px-2 py-0.5 rounded-md ${priorityColor}`}>
-                    {priorityLabel}
-                </span>
-                {/* Optional: Show status badge if we are in priority view? For now always show small indicator */}
+            <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider justify-between items-start">
+                <div className="flex gap-2">
+                    <span className={`px-2 py-0.5 rounded-md ${priorityColor}`}>
+                        {priorityLabel}
+                    </span>
+                    {task.is_habit && <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400">Habit</span>}
+                    {task.is_system && <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400">Event</span>}
+                </div>
+                {!isOverlay && (
+                    <button 
+                        onClick={handleDelete}
+                        className="text-gray-500 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100 z-10"
+                        title="Delete"
+                        onPointerDown={(e) => e.stopPropagation()}
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                )}
             </div>
 
             {/* Title */}
             <div className="flex items-start gap-2">
                 <span className="mt-0.5 text-gray-500"><FileText size={14} /></span>
-                <h3 className="text-sm font-medium text-gray-200 leading-snug">
+                <h3 className="text-sm font-medium text-gray-200 leading-snug pr-4">
                     {task.title}
                 </h3>
             </div>

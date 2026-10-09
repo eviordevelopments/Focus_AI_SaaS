@@ -19,7 +19,7 @@ export default function CalendarWidget({ selectedDate, onSelectDate, markedDates
     return (
         <GlassCard fullHeight={fullHeight}>
             <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">{currentMonth}</h3>
+ <h3 className="text-xl font-black text-white uppercase tracking-tighter">{currentMonth}</h3>
                 <div className="flex gap-2">
                     <button className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-white border border-transparent hover:border-white/5"><ChevronLeft size={18} /></button>
                     <button className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-white border border-transparent hover:border-white/5"><ChevronRight size={18} /></button>

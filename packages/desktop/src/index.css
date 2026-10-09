@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Copernicus';
+  src: url('/fonts/CopernicusTrial-Book-BF66160450c2e92.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Copernicus';
+  src: url('/fonts/CopernicusTrial-Medium-BF66160450d988d.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Copernicus';
+  src: url('/fonts/CopernicusTrial-Semibold-BF66160451692c7.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Copernicus';
+  src: url('/fonts/CopernicusTrial-Bold-BF6616045097aac.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
 :root {
   /* Dark Mode (Default) */
   --bg-app: #050505;
@@ -50,22 +78,60 @@
   transition: all 0.5s ease;
 }
 
-/* Scrollbar customization */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+/* Aggressive Scrollbar Hidden */
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
-  border-radius: 10px;
+* {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 svg:focus,
 div:focus,
 .recharts-wrapper:focus {
   outline: none !important;
+}
+
+/* Animated Border for Chat */
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spin-border {
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+.animated-border-box {
+  position: relative;
+  border-radius: 1rem;
+}
+
+.animated-border-box::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--border-angle) at 50% 50%, transparent 70%, rgba(59, 130, 246, 0.8) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: spin-border 6s linear infinite;
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.animated-border-box:focus-within::before {
+  opacity: 1;
+  background: conic-gradient(from var(--border-angle) at 50% 50%, transparent 50%, rgba(96, 165, 250, 1) 100%);
 }

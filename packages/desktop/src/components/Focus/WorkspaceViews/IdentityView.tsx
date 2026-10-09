@@ -15,7 +15,7 @@ export function IdentityView({ shifts, areaColor }: IdentityViewProps) {
                     <Sparkles size={20} className="text-indigo-400" />
                     <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Identity Evolution Protocol</h2>
                 </div>
-                <p className="text-2xl font-black text-white uppercase italic tracking-tighter max-w-2xl">
+ <p className="text-2xl font-black text-white uppercase tracking-tighter max-w-2xl">
                     "Every action you take is a vote for the type of person you wish to become."
                 </p>
             </header>
@@ -40,7 +40,7 @@ export function IdentityView({ shifts, areaColor }: IdentityViewProps) {
 
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em]">Primary Transformation</label>
-                                <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-none italic">
+ <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-none ">
                                     {shift.primary_identity}
                                 </h3>
                             </div>
@@ -48,11 +48,11 @@ export function IdentityView({ shifts, areaColor }: IdentityViewProps) {
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-gray-700 uppercase tracking-widest block">Baseline</label>
-                                    <div className="text-sm font-bold text-gray-500 italic">"{shift.status_quo || 'Starting transition...'}"</div>
+ <div className="text-sm font-bold text-gray-500 ">"{shift.status_quo || 'Starting transition...'}"</div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-indigo-500/50 uppercase tracking-widest block font-serif italic">The Shift</label>
-                                    <div className="text-sm font-bold text-indigo-400 italic">"{shift.target_identity || 'Ascending...'}"</div>
+ <label className="text-[9px] font-black text-indigo-500/50 uppercase tracking-widest block font-serif ">The Shift</label>
+ <div className="text-sm font-bold text-indigo-400 ">"{shift.target_identity || 'Ascending...'}"</div>
                                 </div>
                             </div>
 
@@ -63,7 +63,7 @@ export function IdentityView({ shifts, areaColor }: IdentityViewProps) {
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <Zap size={12} className="text-amber-500" />
-                                    <span className="text-[10px] font-black text-white uppercase tracking-tighter italic">Lvl {idx + 1} Awareness</span>
+ <span className="text-[10px] font-black text-white uppercase tracking-tighter ">Lvl {idx + 1} Awareness</span>
                                 </div>
                             </div>
                         </div>

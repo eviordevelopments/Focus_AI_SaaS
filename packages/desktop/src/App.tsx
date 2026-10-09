@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { LayoutDashboard, CheckSquare, BrainCircuit, Activity, GraduationCap, Bot, Calendar as CalIcon, ChevronLeft, ChevronRight, Target, TrendingUp, Compass, Globe, Hash, BookOpen, Workflow, Settings } from 'lucide-react'
+import { LayoutDashboard, CheckSquare, BrainCircuit, Activity, GraduationCap, Bot, Calendar as CalIcon, ChevronLeft, ChevronRight, Target, TrendingUp, Compass, Globe, Hash, BookOpen, Workflow, Settings, Users, Cpu, Zap, GanttChartSquare } from 'lucide-react'
 import { TaskList } from './components/TaskList'
 import { DeepWorkView } from './components/DeepWorkView'
+import { TimerSync } from './components/Focus/TimerSync';
+import { WidgetRoute } from './components/Focus/WidgetRoute';
 import { HealthView } from './components/HealthView'
-import { LearningView } from './components/LearningView'
 import { FocusAIView } from './components/FocusAIView'
 import { EisenhowerMatrixPage } from './components/Eisenhower/EisenhowerMatrixPage'
 import { AuthLayout } from './components/Auth/AuthLayout'
@@ -24,10 +25,14 @@ import { ReferencesView } from './components/References/ReferencesView'
 
 import Dashboard from './components/dashboard/Dashboard'
 import CalendarPage from './components/Calendar/CalendarPage'
-import WorkflowsPage from './components/Workflows/WorkflowsPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import logo from './assets/logo.png'
 import deepmindLogo from './assets/deepmind.png'
+import { SpaceBackground } from './components/background/SpaceBackground'
+import { AIAgentsStudio } from './components/AIAgents/AIAgentsStudio'
+import { AutomationsStudio } from './components/Automations/AutomationsStudio'
+import { GanttStudio } from './components/Planning/GanttStudio'
+import { FloatingNotesWidget } from './components/Notes/FloatingNotesWidget'
 
 import { tick } from './features/timer/timerSlice'
 import GlobalTimerHeader from './components/GlobalTimerHeader'
@@ -91,6 +96,13 @@ function App() {
         }
     }, [themeMode]);
 
+    // Check if we are running in the widget window route
+    const isWidgetRoute = window.location.hash === '#/widget';
+
+    if (isWidgetRoute) {
+        return <WidgetRoute />;
+    }
+
     if (!isAuthenticated) {
         return (
             <ErrorBoundary>
@@ -114,12 +126,12 @@ function App() {
     return (
         <ErrorBoundary>
             <XPProvider>
-                <div className="flex h-screen w-full bg-[var(--bg-app)] text-[var(--text-main)] overflow-hidden font-sans selection:bg-indigo-500/30 transition-colors duration-500">
+                {/* Space Background */}
+                <SpaceBackground />
+                
+                <div className="flex h-screen w-full text-[var(--text-main)] overflow-hidden font-sans selection:bg-indigo-500/30 transition-colors duration-500 bg-transparent">
                     <GlobalTimerHeader />
                     <SessionBlockingOverlay />
-
-                    <div className="fixed top-0 right-0 w-[800px] h-[800px] bg-indigo-600/10 rounded-full blur-[160px] pointer-events-none mix-blend-screen animate-pulse" />
-                    <div className="fixed bottom-0 left-0 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[140px] pointer-events-none mix-blend-screen animate-pulse" style={{ animationDelay: '2s' }} />
 
                     <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-20 lg:w-72'} m-4 h-[calc(100%-2rem)] rounded-[2.5rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-3xl flex flex-col transition-all duration-700 z-50 shadow-2xl relative group`}>
                         <button
@@ -141,27 +153,27 @@ function App() {
                             <SidebarDateDisplay collapsed={isSidebarCollapsed} />
                         </div>
 
-                        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar overflow-x-hidden">
+                        <nav className={`flex-1 py-6 space-y-1.5 overflow-y-auto custom-scrollbar overflow-x-hidden ${isSidebarCollapsed ? 'px-3' : 'px-4'}`}>
                             <SectionHeader label="Core" collapsed={isSidebarCollapsed} />
                             <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => dispatch(setActiveTab('dashboard'))} collapsed={isSidebarCollapsed} />
-                            <NavItem icon={<BookOpen size={20} />} label="References" active={activeTab === 'references'} onClick={() => dispatch(setActiveTab('references'))} collapsed={isSidebarCollapsed} />
+                            <NavItem icon={<BookOpen size={20} />} label="Resources" active={activeTab === 'references'} onClick={() => dispatch(setActiveTab('references'))} collapsed={isSidebarCollapsed} />
                             <NavItem icon={<CalIcon size={20} />} label="Calendar" active={activeTab === 'calendar'} onClick={() => dispatch(setActiveTab('calendar'))} collapsed={isSidebarCollapsed} />
 
                             <SectionHeader label="Deep Work" collapsed={isSidebarCollapsed} />
                             <NavItem icon={<CheckSquare size={20} />} label="Tasks" active={activeTab === 'tasks'} onClick={() => dispatch(setActiveTab('tasks'))} collapsed={isSidebarCollapsed} />
-                            <NavItem icon={<Target size={20} />} label="Eisenhower" active={activeTab === 'eisenhower'} onClick={() => dispatch(setActiveTab('eisenhower'))} collapsed={isSidebarCollapsed} />
                             <NavItem icon={<BrainCircuit size={20} />} label="Flow State" active={activeTab === 'deepwork'} onClick={() => dispatch(setActiveTab('deepwork'))} collapsed={isSidebarCollapsed} />
                             <NavItem icon={<Hash size={20} />} label="Habits" active={activeTab === 'habits'} onClick={() => dispatch(setActiveTab('habits'))} collapsed={isSidebarCollapsed} />
 
                             <SectionHeader label="Growth" collapsed={isSidebarCollapsed} />
                             <NavItem icon={<Activity size={20} />} label="Biometrics" active={activeTab === 'health'} onClick={() => dispatch(setActiveTab('health'))} collapsed={isSidebarCollapsed} />
-                            <NavItem icon={<GraduationCap size={20} />} label="Academy" active={activeTab === 'learning'} onClick={() => dispatch(setActiveTab('learning'))} collapsed={isSidebarCollapsed} />
                             <NavItem icon={<Bot size={20} />} label="Cognitive AI" active={activeTab === 'focus-ai'} onClick={() => dispatch(setActiveTab('focus-ai'))} collapsed={isSidebarCollapsed} />
+                            <NavItem icon={<Cpu size={20} />} label="AI Agents" active={activeTab === 'ai-agents'} onClick={() => dispatch(setActiveTab('ai-agents'))} collapsed={isSidebarCollapsed} />
+                            <NavItem icon={<Zap size={20} />} label="Automations" active={activeTab === 'automations'} onClick={() => dispatch(setActiveTab('automations'))} collapsed={isSidebarCollapsed} />
 
                             <SectionHeader label="Strategy" collapsed={isSidebarCollapsed} />
-                            <NavItem icon={<Workflow size={20} />} label="Sistemas" active={activeTab === 'systems'} onClick={() => dispatch(setActiveTab('systems'))} collapsed={isSidebarCollapsed} />
                             <NavItem icon={<TrendingUp size={20} />} label="Reviews" active={activeTab === 'reviews'} onClick={() => dispatch(setActiveTab('reviews'))} collapsed={isSidebarCollapsed} />
                             <NavItem icon={<Compass size={20} />} label="Planning" active={activeTab === 'planning'} onClick={() => dispatch(setActiveTab('planning'))} collapsed={isSidebarCollapsed} />
+                            <NavItem icon={<GanttChartSquare size={20} />} label="Gantt Studio" active={activeTab === 'gantt-studio'} onClick={() => dispatch(setActiveTab('gantt-studio'))} collapsed={isSidebarCollapsed} />
                             <NavItem icon={<Globe size={20} />} label="Architecture" active={activeTab === 'areas'} onClick={() => dispatch(setActiveTab('areas'))} collapsed={isSidebarCollapsed} />
                             <NavItem icon={<Settings size={20} />} label="Settings" active={activeTab === 'settings'} onClick={() => dispatch(setActiveTab('settings'))} collapsed={isSidebarCollapsed} />
                         </nav>
@@ -169,21 +181,22 @@ function App() {
                         <SidebarProfile user={user} collapsed={isSidebarCollapsed} />
                     </aside>
 
-                    <main className="flex-1 h-full overflow-hidden relative z-10 pt-20 lg:pt-4">
-                        <div className="h-full overflow-y-auto custom-scrollbar scroll-smooth">
-                            <div className="p-4 md:p-8 min-h-full">
+                    <main className="flex-1 min-h-0 overflow-hidden relative z-10 pt-20 lg:pt-4 flex flex-col">
+                        <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'focus-ai' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar scroll-smooth'}`}>
+                            <div className={`flex-1 min-h-0 flex flex-col relative h-full ${activeTab === 'focus-ai' ? 'p-0' : 'p-4 md:p-8'}`}>
                                 {activeTab === 'dashboard' && <Dashboard />}
                                 {activeTab === 'references' && <ReferencesView />}
                                 {activeTab === 'calendar' && <CalendarPage />}
                                 {activeTab === 'tasks' && <TaskList />}
                                 {activeTab === 'deepwork' && <DeepWorkView />}
                                 {activeTab === 'health' && <HealthView />}
-                                {activeTab === 'learning' && <LearningView />}
                                 {activeTab === 'focus-ai' && <FocusAIView />}
+                                {activeTab === 'ai-agents' && <AIAgentsStudio />}
+                                {activeTab === 'automations' && <AutomationsStudio />}
                                 {activeTab === 'eisenhower' && <EisenhowerMatrixPage />}
-                                {activeTab === 'systems' && <WorkflowsPage />}
                                 {activeTab === 'reviews' && <WeeklyReview />}
                                 {activeTab === 'planning' && <QuarterlyPlanning />}
+                                {activeTab === 'gantt-studio' && <GanttStudio />}
                                 {activeTab === 'areas' && <LifeAreasGrid />}
                                 {activeTab === 'quests' && <QuestDashboard />}
                                 {activeTab === 'habits' && <HabitsView />}
@@ -191,6 +204,8 @@ function App() {
                             </div>
                         </div>
                     </main>
+                    <FloatingNotesWidget />
+                    <TimerSync />
                 </div>
             </XPProvider>
         </ErrorBoundary>
@@ -210,7 +225,7 @@ function NavItem({ icon, label, active, onClick, collapsed }: { icon: any, label
     return (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all duration-300 group relative ${active ? 'bg-indigo-500/10 text-indigo-400 shadow-xl backdrop-blur-xl border border-indigo-500/20' : 'text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/[0.03]'}`}
+            className={`w-full flex items-center ${collapsed ? 'justify-center p-3' : 'justify-start gap-3.5 px-4 py-3'} rounded-2xl transition-all duration-300 group relative ${active ? 'bg-indigo-500/10 text-indigo-400 shadow-xl backdrop-blur-xl border border-indigo-500/20' : 'text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/[0.03]'}`}
         >
             <span className={`shrink-0 transition-all duration-500 ${active ? 'text-indigo-400 scale-110' : 'group-hover:text-indigo-400 group-hover:scale-110'}`}>{icon}</span>
             <span className={`text-[13px] font-bold tracking-tight transition-all duration-500 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 flex-1 text-left'}`}>

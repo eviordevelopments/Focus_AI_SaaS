@@ -11,3 +11,5 @@ build
 # Build output
 packages/*/dist
 packages/*/build
+packages/desktop/dist_electron/
+packages/desktop/dist-electron/

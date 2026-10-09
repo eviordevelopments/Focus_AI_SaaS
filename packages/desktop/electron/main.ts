@@ -1,9 +1,11 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain, session, systemPreferences } from 'electron';
 import * as path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 
 
 let serverProcess: ChildProcess | null = null;
+let widgetWindow: BrowserWindow | null = null;
+let mainWindow: BrowserWindow | null = null;
 
 function startBackend() {
     const isDev = !app.isPackaged;
@@ -38,7 +40,7 @@ function startBackend() {
 
 
 function createWindow() {
-    const win = new BrowserWindow({
+    mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
         webPreferences: {
@@ -55,24 +57,73 @@ function createWindow() {
 
     console.log('Electron Window Created. Target URL:', process.env.VITE_DEV_SERVER_URL);
 
-    // Open devtools by default to catch errors
-    win.webContents.openDevTools();
+    // Removed devtools default open to avoid screen takeover
 
     // Basic environment handling for Vite + Electron
     if (process.env.VITE_DEV_SERVER_URL) {
-        win.loadURL(process.env.VITE_DEV_SERVER_URL)
+        mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
     } else {
         // Fallback or Production
         const distIndex = path.join(__dirname, '../dist/index.html');
         console.log('VITE_DEV_SERVER_URL not set. Attempting fallback to http://localhost:5173');
-        win.loadURL('http://localhost:5173').catch(() => {
+        mainWindow.loadURL('http://localhost:5173').catch(() => {
             console.log('Localhost failed, loading file:', distIndex);
-            win.loadFile(distIndex);
+            mainWindow?.loadFile(distIndex);
         });
     }
 }
 
+function createWidgetWindow() {
+    if (widgetWindow) return;
+
+    widgetWindow = new BrowserWindow({
+        width: 300,
+        height: 120,
+        x: 40,
+        y: 40,
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        hasShadow: false,
+        resizable: false,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: false,
+            contextIsolation: true,
+        },
+    });
+
+    widgetWindow.setAlwaysOnTop(true, 'floating');
+    widgetWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    
+    // widgetWindow.webContents.openDevTools({ mode: 'detach' });
+
+    if (process.env.VITE_DEV_SERVER_URL) {
+        widgetWindow.loadURL(`${process.env.VITE_DEV_SERVER_URL}#/widget`);
+    } else {
+        widgetWindow.loadURL('http://localhost:5173/#/widget');
+    }
+
+    widgetWindow.on('closed', () => {
+        widgetWindow = null;
+    });
+}
+
 app.whenReady().then(() => {
+
+    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+        if (permission === 'media') {
+            callback(true);
+        } else {
+            callback(true); // Allow all in dev for simplicity
+        }
+    });
+
+    session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+        if (permission === 'media') return true;
+        return true;
+    });
+
     startBackend();
     createWindow()
 
@@ -81,6 +132,29 @@ app.whenReady().then(() => {
             createWindow()
         }
     })
+
+    ipcMain.on('open-widget', () => {
+        createWidgetWindow();
+    });
+
+    ipcMain.on('close-widget', () => {
+        if (widgetWindow) {
+            widgetWindow.close();
+            widgetWindow = null;
+        }
+    });
+
+    ipcMain.on('sync-timer', (event, data) => {
+        if (widgetWindow && !widgetWindow.isDestroyed()) {
+            widgetWindow.webContents.send('timer-sync', data);
+        }
+    });
+
+    ipcMain.on('widget-command', (event, command) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('widget-command', command);
+        }
+    });
 })
 
 app.on('window-all-closed', () => {

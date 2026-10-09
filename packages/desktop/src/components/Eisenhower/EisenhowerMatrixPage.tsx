@@ -31,7 +31,7 @@ const QUADRANTS = [
     { id: 'Q4_DELETE', title: 'Delete', sub: 'Not Urgent or Important', color: 'from-gray-500/20 to-transparent', hint: 'Distractions. Why are these here?' }
 ];
 
-export function EisenhowerMatrixPage() {
+export function EisenhowerMatrixPage({ hideHeader = false }: { hideHeader?: boolean }) {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const { data: snapshot, isLoading } = useGetEisenhowerSnapshotQuery(selectedDate);
     const [upsertItem] = useUpsertEisenhowerItemMutation();
@@ -151,6 +151,7 @@ export function EisenhowerMatrixPage() {
     return (
         <div className="h-full flex flex-col animate-in fade-in duration-500">
             {/* Header */}
+            {!hideHeader && (
             <div className="flex items-center justify-between mb-8 px-2">
                 <div>
                     <h2 className="text-2xl font-bold text-white flex items-center gap-3">
@@ -178,6 +179,7 @@ export function EisenhowerMatrixPage() {
                     </button>
                 </div>
             </div>
+            )}
 
             {/* Matrix Grid */}
             <DndContext
@@ -214,20 +216,6 @@ export function EisenhowerMatrixPage() {
                 />
             </DndContext>
 
-            {/* Quick Ritual Banner (Only if first time / empty) */}
-            {snapshot?.items?.length === 0 && (
-                <div className="mt-8 p-6 rounded-3xl bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-transparent border border-white/10 flex items-center justify-between group">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
-                            <Sparkles size={24} />
-                        </div>
-                        <div>
-                            <h4 className="text-white font-bold">Let's plan your day.</h4>
-                            <p className="text-gray-400 text-sm">Drop your tasks into the 4 quadrants to choose what truly matters.</p>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

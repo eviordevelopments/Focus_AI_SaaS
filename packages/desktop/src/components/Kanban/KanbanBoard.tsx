@@ -16,13 +16,14 @@ import { createPortal } from 'react-dom';
 import { Task, useUpdateTaskMutation } from '../../features/api/apiSlice';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from '../TaskCard';
-import { Filter, Layers } from 'lucide-react';
+import { Filter, Layers, Target, Plus } from 'lucide-react';
+import { EisenhowerMatrixPage } from '../Eisenhower/EisenhowerMatrixPage';
 
 interface KanbanBoardProps {
     tasks: Task[];
 }
 
-type GroupBy = 'status' | 'priority';
+type GroupBy = 'status' | 'priority' | 'eisenhower';
 
 interface ColumnDef {
     id: string;
@@ -141,6 +142,7 @@ export function KanbanBoard({ tasks }: KanbanBoardProps) {
         if (activeContainer !== overContainer) {
             const task = tasks.find(t => t.id === activeId);
             if (!task) return;
+            if (task.is_habit || task.is_system) return; // Cannot change status/priority of these via drag
 
             // Determine new group
             const newGroupId = overContainer;
@@ -176,62 +178,74 @@ export function KanbanBoard({ tasks }: KanbanBoardProps) {
         <div className="flex flex-col h-full">
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-4 px-1">
-                <div className="flex items-center gap-2 bg-black/30 p-1 rounded-lg border border-white/10">
+                <div className="flex p-1 bg-white/5 border border-white/10 rounded-full">
                     <button
                         onClick={() => setGroupBy('status')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all ${groupBy === 'status' ? 'bg-white/10 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 transition-all ${groupBy === 'status' ? 'bg-white/10 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
                     >
-                        <Layers size={14} /> Status
+                        <Layers size={16} /> Status
                     </button>
                     <button
                         onClick={() => setGroupBy('priority')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all ${groupBy === 'priority' ? 'bg-white/10 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 transition-all ${groupBy === 'priority' ? 'bg-white/10 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
                     >
-                        <Filter size={14} /> Priority
+                        <Filter size={16} /> Priority
+                    </button>
+                    <button
+                        onClick={() => setGroupBy('eisenhower')}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 transition-all ${groupBy === 'eisenhower' ? 'bg-white/10 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
+                    >
+                        <Target size={16} /> Eisenhower
                     </button>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={handleNewTask}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-md shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                        className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white rounded-full transition-all active:scale-95 flex items-center justify-center"
+                        title="New Task"
                     >
-                        New
+                        <Plus size={24} strokeWidth={2} />
                     </button>
                 </div>
             </div>
 
             {/* Board Area */}
-            {/* ... DnDContext logic ... */}
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCorners}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-            >
-                <div className="flex-1 overflow-x-auto min-h-0">
-                    <div className="flex h-full gap-4 pb-4">
-                        {columns.map(col => (
-                            <KanbanColumn
-                                key={col.id}
-                                id={col.id}
-                                title={col.title}
-                                color={col.color}
-                                tasks={groupedTasks[col.id]}
-                                count={groupedTasks[col.id].length}
-                                onAdd={() => handleQuickAdd(col.id)}
-                            />
-                        ))}
-                    </div>
+            {groupBy === 'eisenhower' ? (
+                <div className="flex-1 min-h-0 pb-12">
+                    <EisenhowerMatrixPage hideHeader={true} />
                 </div>
+            ) : (
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCorners}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDragEnd={handleDragEnd}
+                >
+                    <div className="flex-1 overflow-x-auto min-h-0">
+                        <div className="flex h-full gap-4 pb-4">
+                            {columns.map(col => (
+                                <KanbanColumn
+                                    key={col.id}
+                                    id={col.id}
+                                    title={col.title}
+                                    color={col.color}
+                                    tasks={groupedTasks[col.id]}
+                                    count={groupedTasks[col.id].length}
+                                    onAdd={() => handleQuickAdd(col.id)}
+                                />
+                            ))}
+                        </div>
+                    </div>
 
-                {createPortal(
-                    <DragOverlay>
-                        {activeTask ? <TaskCard task={activeTask} isOverlay /> : null}
-                    </DragOverlay>,
-                    document.body
-                )}
-            </DndContext>
+                    {createPortal(
+                        <DragOverlay>
+                            {activeTask ? <TaskCard task={activeTask} isOverlay /> : null}
+                        </DragOverlay>,
+                        document.body
+                    )}
+                </DndContext>
+            )}
 
             {/* Task Creation Modal */}
             <TaskFormModal

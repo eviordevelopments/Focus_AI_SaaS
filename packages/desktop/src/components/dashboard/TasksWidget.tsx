@@ -19,7 +19,7 @@ export default function TasksWidget({ tasks, onToggle }: TasksWidgetProps) {
         <GlassCard>
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Today's Tasks</h3>
+ <h3 className="text-xl font-black text-white uppercase tracking-tighter">Today's Tasks</h3>
                 </div>
                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{doneCount}/{tasks.length} done</span>
             </div>

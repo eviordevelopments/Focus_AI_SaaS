@@ -46,7 +46,7 @@ export default function SessionBlockingOverlay() {
                         <Trophy className="text-amber-400" size={32} />
                         <Rocket className="text-indigo-400" size={32} />
                     </div>
-                    <h2 className="text-5xl font-black text-white italic uppercase tracking-tight">Focus Secured</h2>
+ <h2 className="text-5xl font-black text-white uppercase tracking-tight">Focus Secured</h2>
                     <p className="text-xl text-gray-500 max-w-sm mx-auto font-medium">
                         You've earned a <span className="text-white">Ancient Evergreen</span> for completing a {plannedMinutes}m session.
                     </p>

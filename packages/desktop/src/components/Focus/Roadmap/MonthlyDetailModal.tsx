@@ -116,7 +116,7 @@ export function MonthlyDetailModal({ month, year, onClose }: MonthlyDetailModalP
                             </span>
                             <span className="text-gray-600 text-[10px] font-black uppercase tracking-widest">{year}</span>
                         </div>
-                        <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase">{MONTH_NAMES[month]} Level Detail</h2>
+ <h2 className="text-4xl font-black text-white tracking-tighter uppercase">{MONTH_NAMES[month]} Level Detail</h2>
                     </div>
                     <button onClick={onClose} className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl text-gray-500 hover:text-white transition-all">
                         <X size={24} />
@@ -169,7 +169,7 @@ export function MonthlyDetailModal({ month, year, onClose }: MonthlyDetailModalP
                                     <TrendingUp size={80} />
                                 </div>
                                 <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Lifestyle Tier Status</h4>
-                                <div className="text-5xl font-black text-white tracking-tighter italic uppercase mb-2" style={{ color: mvlColor }}>
+ <div className="text-5xl font-black text-white tracking-tighter uppercase mb-2" style={{ color: mvlColor }}>
                                     {mvlStatus}
                                 </div>
                                 <p className="text-gray-400 text-xs font-medium leading-relaxed mb-6">
@@ -220,7 +220,7 @@ export function MonthlyDetailModal({ month, year, onClose }: MonthlyDetailModalP
                                             <div className="text-sm font-bold text-white uppercase tracking-tighter">{h.name}</div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-lg font-black text-rose-500 italic">{Math.round(h.completion)}%</div>
+ <div className="text-lg font-black text-rose-500 ">{Math.round(h.completion)}%</div>
                                         </div>
                                     </div>
                                 ))}
@@ -244,7 +244,7 @@ export function MonthlyDetailModal({ month, year, onClose }: MonthlyDetailModalP
                                     </div>
                                     <div>
                                         <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Avg Mood Rating</div>
-                                        <div className="text-xl font-black text-white italic">{(avgHealth.mood || 0).toFixed(1)} / 10</div>
+ <div className="text-xl font-black text-white ">{(avgHealth.mood || 0).toFixed(1)} / 10</div>
                                     </div>
                                 </div>
                                 <div className="p-5 bg-white/5 rounded-[2rem] border border-white/5 flex items-center gap-6">
@@ -253,7 +253,7 @@ export function MonthlyDetailModal({ month, year, onClose }: MonthlyDetailModalP
                                     </div>
                                     <div>
                                         <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Avg Stress Sync</div>
-                                        <div className="text-xl font-black text-white italic">{(avgHealth.stress || 0).toFixed(1)} / 10</div>
+ <div className="text-xl font-black text-white ">{(avgHealth.stress || 0).toFixed(1)} / 10</div>
                                     </div>
                                 </div>
                             </div>

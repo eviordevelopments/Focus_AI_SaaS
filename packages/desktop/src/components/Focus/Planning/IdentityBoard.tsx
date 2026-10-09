@@ -49,7 +49,7 @@ export function IdentityBoard({ year, identities, onSelectQuarter }: IdentityBoa
 
                                     <div className="mb-6">
                                         <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-2">Quarter's Objective</label>
-                                        <p className="text-xs text-gray-400 line-clamp-3 leading-relaxed italic">
+ <p className="text-xs text-gray-400 line-clamp-3 leading-relaxed ">
                                             "{shift.vision_statement || "No objective defined."}"
                                         </p>
                                     </div>
@@ -70,7 +70,7 @@ export function IdentityBoard({ year, identities, onSelectQuarter }: IdentityBoa
                                                 </div>
                                             ))}
                                             {outcomes.length === 0 && (
-                                                <p className="text-[10px] text-gray-700 italic">No outcomes added.</p>
+ <p className="text-[10px] text-gray-700 ">No outcomes added.</p>
                                             )}
                                         </div>
                                     </div>

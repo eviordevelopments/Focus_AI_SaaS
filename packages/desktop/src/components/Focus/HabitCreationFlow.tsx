@@ -135,7 +135,7 @@ export function HabitCreationFlow({ onClose, systemId, editingId, initialData }:
                                         <textarea
                                             value={form.identity_statement}
                                             onChange={e => setForm({ ...form, identity_statement: e.target.value })}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-medium focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-gray-700 min-h-[100px] resize-none italic"
+ className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-medium focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-gray-700 min-h-[100px] resize-none "
                                             placeholder="I am the type of person who never misses a sunrise rehearsal..."
                                         />
                                     </div>

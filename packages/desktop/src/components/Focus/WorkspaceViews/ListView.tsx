@@ -12,6 +12,7 @@ interface ListViewProps {
     onAddProject?: () => void;
     onAddHabit?: () => void;
     onItemClick?: (type: 'system' | 'project' | 'habit' | 'task', item: any) => void;
+    areaColor?: string;
 }
 
 export function ListView({ systems, habits, projects, onAddSystem, onAddProject, onAddHabit, onItemClick }: ListViewProps) {
@@ -57,7 +58,7 @@ export function ListView({ systems, habits, projects, onAddSystem, onAddProject,
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
-                                        <span className="text-xs text-gray-400 italic">{sys.supports_identity || 'N/A'}</span>
+ <span className="text-xs text-gray-400 ">{sys.supports_identity || 'N/A'}</span>
                                     </td>
                                     <td className="px-8 py-6 text-right">
                                         <span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm">
@@ -109,7 +110,7 @@ export function ListView({ systems, habits, projects, onAddSystem, onAddProject,
                                 <div className="w-48 space-y-2">
                                     <div className="flex justify-between items-end">
                                         <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Efficiency</span>
-                                        <span className="text-[10px] font-black text-white italic">{Math.round(p.progress * 100)}%</span>
+ <span className="text-[10px] font-black text-white ">{Math.round(p.progress * 100)}%</span>
                                     </div>
                                     <div className="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/[0.02]">
                                         <motion.div
@@ -157,7 +158,7 @@ export function ListView({ systems, habits, projects, onAddSystem, onAddProject,
                                 <MoreVertical size={14} className="text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                             <h5 className="text-[13px] font-black text-white tracking-tight line-clamp-2 leading-snug">{h.name}</h5>
-                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-4 italic">{h.frequency || 'Daily'}</p>
+ <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-4 ">{h.frequency || 'Daily'}</p>
                         </motion.div>
                     ))}
                 </div>

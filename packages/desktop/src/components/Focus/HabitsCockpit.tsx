@@ -34,7 +34,7 @@ function DayCardOverlay({ date, onClose }: { date: Date, onClose: () => void }) 
     const todayDay = getDay(date);
     const scheduledHabits = habits.filter((h: any) => {
         if (!h.days_of_week) return true;
-        let days = [];
+        let days: number[] = [];
         try {
             days = typeof h.days_of_week === 'string' ? JSON.parse(h.days_of_week) : h.days_of_week;
         } catch (e) {

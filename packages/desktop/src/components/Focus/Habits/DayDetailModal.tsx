@@ -17,7 +17,7 @@ export function DayDetailModal({ date, onClose }: DayDetailModalProps) {
     const scheduledHabits = habits.filter((h: any) => {
         if (!h.is_active) return false;
         if (!h.days_of_week) return true;
-        let days = [];
+        let days: number[] = [];
         try {
             days = typeof h.days_of_week === 'string' ? JSON.parse(h.days_of_week) : h.days_of_week;
         } catch (e) {
@@ -91,7 +91,7 @@ export function DayDetailModal({ date, onClose }: DayDetailModalProps) {
 
                     <div className="space-y-1">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Day Intelligence Report</label>
-                        <h2 className="text-3xl font-black tracking-tighter uppercase italic">
+ <h2 className="text-3xl font-black tracking-tighter uppercase ">
                             {format(date, 'EEEE, MMM d')}
                         </h2>
                     </div>
@@ -100,7 +100,7 @@ export function DayDetailModal({ date, onClose }: DayDetailModalProps) {
                         <div className="flex-1">
                             <div className="flex justify-between mb-2 items-end">
                                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Daily Progression</span>
-                                <span className={`text-2xl font-black italic tracking-tighter ${statusColor}`}>
+ <span className={`text-2xl font-black tracking-tighter ${statusColor}`}>
                                     {completionRate}%
                                 </span>
                             </div>

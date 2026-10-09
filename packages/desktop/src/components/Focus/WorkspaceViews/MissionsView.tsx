@@ -43,22 +43,22 @@ export function MissionsView({ outcomes, projects, areaColor }: MissionsViewProp
                                         </div>
                                         <div className="space-y-1">
                                             <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Macro Objective</span>
-                                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none italic">{outcome.description}</h3>
+ <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none ">{outcome.description}</h3>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
                                         <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
                                             <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest block mb-2">Quarter</label>
-                                            <span className="text-sm font-black text-white uppercase italic">{outcome.quarter} {outcome.year}</span>
+ <span className="text-sm font-black text-white uppercase ">{outcome.quarter} {outcome.year}</span>
                                         </div>
                                         <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
                                             <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest block mb-2">Priority</label>
-                                            <span className="text-sm font-black text-amber-500 uppercase italic">Level {idx + 1}</span>
+ <span className="text-sm font-black text-amber-500 uppercase ">Level {idx + 1}</span>
                                         </div>
                                         <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 hidden lg:block">
                                             <label className="text-[8px] font-black text-emerald-400 uppercase tracking-widest block mb-2">Impact</label>
-                                            <span className="text-sm font-black text-white uppercase italic">High Velocity</span>
+ <span className="text-sm font-black text-white uppercase ">High Velocity</span>
                                         </div>
                                     </div>
                                 </div>

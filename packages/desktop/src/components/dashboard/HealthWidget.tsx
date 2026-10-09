@@ -22,7 +22,7 @@ export default function HealthWidget({ healthEntry }: HealthWidgetProps) {
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 group-hover/bar:text-gray-300 transition-colors">{label}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-black text-white italic tracking-tighter tabular-nums">{value}</span>
+ <span className="text-sm font-black text-white tracking-tighter tabular-nums">{value}</span>
                     <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">{unit}</span>
                 </div>
             </div>
@@ -42,7 +42,7 @@ export default function HealthWidget({ healthEntry }: HealthWidgetProps) {
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
 
             <div className="flex justify-between items-center mb-10">
-                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Biometric Factors</h3>
+ <h3 className="text-xl font-black text-white uppercase tracking-tighter">Biometric Factors</h3>
                 <Activity size={18} className="text-gray-600" />
             </div>
 

@@ -108,7 +108,7 @@ export function LifeAreaWorkspace({ areaId, onBack, areas }: LifeAreaWorkspacePr
                             </div>
                             <div>
                                 <h1 className="text-5xl font-black text-white tracking-tighter uppercase leading-none">{area.name}</h1>
-                                <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.3em] mt-2 italic flex items-center gap-2">
+ <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.3em] mt-2 flex items-center gap-2">
                                     <Layers size={12} className="text-indigo-500" />
                                     {area.identity_statement || 'Forging a new baseline of excellence'}
                                 </p>
@@ -232,7 +232,7 @@ export function LifeAreaWorkspace({ areaId, onBack, areas }: LifeAreaWorkspacePr
                                 <div className="h-[60vh] flex flex-col items-center justify-center text-gray-700 bg-white/[0.02] rounded-[3rem] border border-dashed border-white/5">
                                     <Layers size={48} className="mb-6 opacity-20" />
                                     <p className="text-[10px] font-black uppercase tracking-[0.3em] mb-2">Neural Engine Initializing</p>
-                                    <p className="text-xs font-bold text-gray-500 italic">Advanced synchronization for {activeView} in progress...</p>
+ <p className="text-xs font-bold text-gray-500 ">Advanced synchronization for {activeView} in progress...</p>
                                 </div>
                             )}
                         </motion.div>

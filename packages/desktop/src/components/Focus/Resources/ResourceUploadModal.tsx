@@ -67,8 +67,8 @@ export function ResourceUploadModal({ onClose, lifeAreaId, projects }: ResourceU
                             <div className="inline-flex p-3 bg-emerald-500/10 rounded-2xl text-emerald-400 mb-2">
                                 <LinkIcon size={24} />
                             </div>
-                            <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic">Resource Sync</h2>
-                            <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase italic flex items-center gap-2">
+ <h2 className="text-3xl font-black text-white tracking-tighter uppercase ">Resource Sync</h2>
+ <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase flex items-center gap-2">
                                 <Tag size={12} className="text-emerald-500" />
                                 Expanding the Vault
                             </p>
@@ -141,7 +141,7 @@ export function ResourceUploadModal({ onClose, lifeAreaId, projects }: ResourceU
                             <textarea
                                 value={form.metadata.notes}
                                 onChange={e => setForm({ ...form, metadata: { ...form.metadata, notes: e.target.value } })}
-                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white text-xs focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all h-24 resize-none italic"
+ className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white text-xs focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all h-24 resize-none "
                                 placeholder="Why is this resource critical for the mission?"
                             />
                         </div>

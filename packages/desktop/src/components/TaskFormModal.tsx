@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import GlassModal from './ui/GlassModal';
 import { useAddTaskMutation, useGetAreasQuery } from '../features/api/apiSlice';
 import { X, Star, Calendar, Clock, Layout, Zap, CheckCircle2 } from 'lucide-react';
 
@@ -54,14 +55,14 @@ export function TaskFormModal({ isOpen, onClose, initialStatus = 'todo', initial
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative w-full max-w-2xl bg-gray-900/90 border border-white/10 rounded-3xl shadow-2xl overflow-hidden glass-panel animate-in zoom-in-95 duration-200">
+        <GlassModal isOpen={isOpen} maxWidth="2xl" padding="p-0">
+            <div className="relative">
                 {/* Decorative background glow */}
                 <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/20 rounded-full blur-[80px]" />
                 <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-[80px]" />
 
                 {/* Header */}
-                <div className="relative flex items-center justify-between p-6 border-b border-white/5 bg-white/5">
+                <div className="relative flex items-center justify-between px-8 pt-8 pb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-400">
                             <Zap size={22} fill="currentColor" />
@@ -230,24 +231,27 @@ export function TaskFormModal({ isOpen, onClose, initialStatus = 'todo', initial
                     </div>
 
                     {/* Submit Footer */}
-                    <div className="pt-4 flex items-center gap-4">
+                    <div className="pt-6 flex items-center justify-end gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-4 rounded-2xl text-sm font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                            className="px-8 py-2.5 rounded-full bg-[#0f1115] border border-white/5 text-white text-sm font-medium hover:bg-white/5 transition-all"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isLoading || !title || !areaId}
-                            className="flex-[2] py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-[0.98] transition-all"
+                            className={`px-8 py-2.5 rounded-full text-sm font-medium transition-all ${(isLoading || !title || !areaId)
+                                    ? 'bg-[#40434b] text-white/40 cursor-not-allowed'
+                                    : 'bg-gray-200 text-gray-900 hover:bg-white'
+                                }`}
                         >
-                            {isLoading ? 'Creating...' : 'Create Task'}
+                            {isLoading ? 'Saving...' : 'Save'}
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
+        </GlassModal>
     );
 }

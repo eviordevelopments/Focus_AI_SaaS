@@ -77,7 +77,7 @@ export function IdentityShiftModal({ isOpen, onClose, quarter, year, initialData
                         <div className="relative z-10 p-10">
                             <div className="flex justify-between items-start mb-10">
                                 <div>
-                                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic">Commit to Shift</h2>
+ <h2 className="text-3xl font-black text-white tracking-tighter uppercase ">Commit to Shift</h2>
                                     <p className="text-gray-500 text-[10px] font-black tracking-[0.4em] uppercase mt-2">
                                         Refining {quarter} {year} • The Forge of Self
                                     </p>

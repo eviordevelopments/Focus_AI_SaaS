@@ -246,7 +246,7 @@ export function SystemCanvas({ onSuccess, onCancel, initialLifeAreaId, existingS
                                 </div>
                             )}
                         </div>
-                        <p className="text-[10px] text-gray-500 mt-3 italic flex items-center gap-1">
+ <p className="text-[10px] text-gray-500 mt-3 flex items-center gap-1">
                             <Info size={12} />
                             Every completion is a vote for your identity.
                         </p>
@@ -428,7 +428,7 @@ export function SystemCanvas({ onSuccess, onCancel, initialLifeAreaId, existingS
                             value={form.link}
                             onChange={e => setForm({ ...form, link: e.target.value })}
                         />
-                        <p className="text-[9px] text-gray-600 mt-2 italic">Optional: Add a link to resources, docs, or tools</p>
+ <p className="text-[9px] text-gray-600 mt-2 ">Optional: Add a link to resources, docs, or tools</p>
                     </section>
 
                     <section className="glass-panel p-6 rounded-3xl border border-white/10 flex items-center justify-between">

@@ -85,11 +85,11 @@ export function AnnualArchitectureMap({ onSelectMonth }: AnnualArchitectureMapPr
                             </div>
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Architecture Mastery Index</span>
                         </div>
-                        <h2 className="text-5xl font-black text-white tracking-tighter italic uppercase leading-none">Global Evolution <span className="text-indigo-500">Sync</span></h2>
+ <h2 className="text-5xl font-black text-white tracking-tighter uppercase leading-none">Global Evolution <span className="text-indigo-500">Sync</span></h2>
                     </div>
                     <div className="text-right">
                         <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-1">Annual Average</div>
-                        <div className="text-4xl font-black text-white italic">{avgAnnualStatus}%</div>
+ <div className="text-4xl font-black text-white ">{avgAnnualStatus}%</div>
                     </div>
                 </div>
 
@@ -263,7 +263,7 @@ export function AnnualArchitectureMap({ onSelectMonth }: AnnualArchitectureMapPr
                                         <span className="text-[9px] font-black uppercase tracking-[0.3em]">Phase {month.period}</span>
                                         {isCompleted && <Sparkles size={10} />}
                                     </div>
-                                    <h3 className="text-4xl font-black text-white tracking-tighter uppercase italic leading-none">{month.name}</h3>
+ <h3 className="text-4xl font-black text-white tracking-tighter uppercase leading-none">{month.name}</h3>
                                     {isCompleted && (
                                         <span className="mt-2 text-[8px] font-black text-emerald-400 uppercase tracking-[0.2em] px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded w-fit inline-block">Achievement Unlocked</span>
                                     )}

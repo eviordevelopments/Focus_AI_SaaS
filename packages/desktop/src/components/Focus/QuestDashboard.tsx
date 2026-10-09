@@ -122,7 +122,7 @@ export function QuestDashboard() {
                                                     {system.difficulty}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-500 line-clamp-1 italic">
+ <p className="text-sm text-gray-500 line-clamp-1 ">
                                                 Cue: {system.cue}
                                             </p>
                                         </div>

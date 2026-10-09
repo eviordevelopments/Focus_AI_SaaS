@@ -31,7 +31,7 @@ export const SidebarProfile = ({ user, collapsed }: SidebarProfileProps) => {
             </div>
             {!collapsed && (
                 <div className="flex-1 min-w-0 animate-in slide-in-from-left-2 duration-300">
-                    <div className="text-sm font-black text-white truncate italic uppercase tracking-tighter">{displayUser?.name || 'Agent'}</div>
+ <div className="text-sm font-black text-white truncate uppercase tracking-tighter">{displayUser?.name || 'Agent'}</div>
                     <div className="text-[9px] font-black text-gray-500 uppercase tracking-widest truncate">{displayUser?.username || '@focus_agent'}</div>
                 </div>
             )}

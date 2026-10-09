@@ -169,15 +169,15 @@ export default function CalendarPage() {
     };
 
     return (
-        <div className="flex flex-col h-full space-y-4 p-6 relative">
+        <div className="flex flex-col h-full space-y-4 relative">
             {/* Header / Controls */}
             {/* ... (Header content) */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-black/20 p-4 rounded-2xl backdrop-blur-md border border-white/5 z-10">
 
                 {/* Left: Title & Date */}
                 <div className="flex items-center gap-4">
-                    <div className="p-2 bg-indigo-500 rounded-lg shadow-lg shadow-indigo-500/20">
-                        <CalIcon className="text-white" size={24} />
+                    <div className="p-2 bg-white/5 rounded-lg border border-white/10 backdrop-blur-md">
+                        <CalIcon className="text-white/80" size={24} />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-white">
@@ -230,36 +230,18 @@ export default function CalendarPage() {
 
                     {/* Sync Buttons */}
                     <div className="flex items-center gap-2">
-                        {/* Google Sync */}
+                        {/* Add Event Button */}
                         <button
-                            onClick={() => alert('Google Calendar integration coming soon!')}
-                            className="px-3 py-2 bg-white text-black hover:bg-gray-200 rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2 font-bold text-xs"
-                            title="Connect Google Calendar"
+                            onClick={openNewEventModal}
+                            className="p-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-white shadow-xl backdrop-blur-md transition-all hover:scale-105 active:scale-95"
+                            title="Add Event"
                         >
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" />
-                            </svg>
-                            Connect Google
-                        </button>
-
-                        {/* Mac Sync */}
-                        <button
-                            onClick={handleSync}
-                            disabled={isSyncing}
-                            className={`px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95 flex items-center gap-2 ${isSyncing ? 'opacity-70 cursor-not-allowed' : ''}`}
-                            title="Sync with Apple Calendar"
-                        >
-                            <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
-                            <span className="text-xs font-bold whitespace-nowrap">
-                                {externalEvents.length > 0 ? 'Mac Synced' : 'Sync Mac'}
-                            </span>
-                            {externalEvents.length > 0 && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />}
+                            <Plus size={20} />
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Main Content */}
             <div className="flex-1 min-h-0 z-0">
                 {view === 'month' && (
                     <MonthView date={currentDate} tasks={displayTasks} habits={habits} onDateClick={handleDateClick} />
@@ -272,16 +254,7 @@ export default function CalendarPage() {
                 )}
             </div>
 
-            {/* Floating Action Button */}
-            <button
-                onClick={openNewEventModal}
-                className="absolute bottom-6 right-6 p-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full shadow-2xl shadow-indigo-500/40 hover:scale-110 active:scale-95 transition-all z-20 group"
-            >
-                <Plus size={32} />
-                <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 px-3 py-1 rounded-lg text-sm text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    Add Event
-                </span>
-            </button>
+
 
             {/* Modal */}
             <EventModal

@@ -20,7 +20,7 @@ export function EisenhowerWidget() {
                         <Target size={20} />
                     </div>
                     <div>
-                        <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Matrix Today</h3>
+ <h3 className="text-xl font-black text-white uppercase tracking-tighter">Matrix Today</h3>
                         <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-black">Eisenhower Focus</p>
                     </div>
                 </div>
@@ -42,7 +42,7 @@ export function EisenhowerWidget() {
                 ].map((item, i) => (
                     <div key={i} className={`${item.color} ${item.borderColor} border rounded-2xl p-4 flex flex-col items-center group/item hover:bg-opacity-20 transition-all duration-300`}>
                         <span className={`text-[10px] font-black uppercase tracking-widest mb-1 ${item.textColor}`}>{item.label}</span>
-                        <span className="text-2xl font-black text-white italic">{item.value}</span>
+ <span className="text-2xl font-black text-white ">{item.value}</span>
                     </div>
                 ))}
             </div>
@@ -62,7 +62,7 @@ export function EisenhowerWidget() {
 
             {/* Empty State */}
             {(!summary?.top_items || summary.top_items.length === 0) && (
-                <div className="flex-1 flex flex-col items-center justify-center opacity-30 mt-4 italic space-y-3">
+ <div className="flex-1 flex flex-col items-center justify-center opacity-30 mt-4 space-y-3">
                     <Sparkles size={32} className="text-indigo-400" />
                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">Protocols pending setup</span>
                 </div>

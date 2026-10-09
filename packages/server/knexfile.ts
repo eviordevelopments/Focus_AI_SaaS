@@ -8,7 +8,7 @@ const config: { [key: string]: Knex.Config } = {
     development: {
         client: "sqlite3",
         connection: {
-            filename: "./dev.sqlite3"
+            filename: path.join(__dirname, "dev.sqlite3")
         },
         useNullAsDefault: true,
         migrations: {
@@ -22,13 +22,14 @@ const config: { [key: string]: Knex.Config } = {
     production: {
         client: "sqlite3",
         connection: {
-            filename: "./prod.sqlite3"
+            filename: path.join(__dirname, "prod.sqlite3")
         },
         useNullAsDefault: true,
         migrations: {
             tableName: "knex_migrations"
         }
     }
+
 };
 
 export default config;

@@ -50,7 +50,7 @@ export function EisenhowerQuadrant({ id, title, description, items, onAdd, onAdd
                         </button>
                     </div>
                 </div>
-                <p className="text-[10px] text-white/50 font-medium italic">{description}</p>
+ <p className="text-[10px] text-white/50 font-medium ">{description}</p>
             </div>
 
             {/* Content Area */}

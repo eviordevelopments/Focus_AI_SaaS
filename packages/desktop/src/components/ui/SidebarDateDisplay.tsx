@@ -12,7 +12,7 @@ export const SidebarDateDisplay = ({ collapsed }: { collapsed: boolean }) => {
 
     return (
         <div className="px-6 py-4 border-b border-white/5 animate-in fade-in duration-500">
-            <div className="text-2xl font-black tracking-tighter text-white italic">
+ <div className="text-2xl font-black tracking-tighter text-white ">
                 {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
             </div>
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mt-1">

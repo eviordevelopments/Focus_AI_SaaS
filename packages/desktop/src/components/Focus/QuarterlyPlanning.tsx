@@ -32,7 +32,7 @@ export function QuarterlyPlanning() {
                         <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-xl shadow-indigo-500/20">
                             <Compass className="text-white" size={32} />
                         </div>
-                        <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic">Planning Canvas</h1>
+ <h1 className="text-5xl font-black text-white tracking-tighter uppercase ">Planning Canvas</h1>
                     </div>
                     <p className="text-gray-500 text-xs font-black tracking-[0.4em] uppercase ml-1">Quarterly Identity Architect</p>
                 </div>

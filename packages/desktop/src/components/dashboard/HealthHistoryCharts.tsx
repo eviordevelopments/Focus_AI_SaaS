@@ -19,7 +19,7 @@ export default function HealthHistoryCharts({ history }: HealthHistoryChartsProp
             {/* Sleep & Mood */}
             <GlassCard>
                 <div className="flex justify-between items-center mb-8">
-                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Sleep & Mood</h3>
+ <h3 className="text-xl font-black text-white uppercase tracking-tighter">Sleep & Mood</h3>
                     <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Efficiency Status</div>
                 </div>
                 <div className="h-64 w-full">
@@ -70,7 +70,7 @@ export default function HealthHistoryCharts({ history }: HealthHistoryChartsProp
             {/* Stress & Exercise */}
             <GlassCard>
                 <div className="flex justify-between items-center mb-8">
-                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Stress & Flow</h3>
+ <h3 className="text-xl font-black text-white uppercase tracking-tighter">Stress & Flow</h3>
                     <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Protocol Sync</div>
                 </div>
                 <div className="h-64 w-full">

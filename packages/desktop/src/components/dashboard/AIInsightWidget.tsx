@@ -35,7 +35,7 @@ export default function AIInsightWidget({ burnoutScore, healthEntry }: AIInsight
                             <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse delay-150" />
                         </div>
                     </div>
-                    <h3 className="text-xl font-black text-white mb-1 italic uppercase tracking-tighter">{title}</h3>
+ <h3 className="text-xl font-black text-white mb-1 uppercase tracking-tighter">{title}</h3>
                     <p className="text-gray-400 text-[13px] font-medium leading-relaxed line-clamp-2 mb-4">{message}</p>
 
                     <button className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors group/btn">

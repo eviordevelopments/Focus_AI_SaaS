@@ -11,7 +11,7 @@ export default function QuickFocusWidget({ lastSession, onStartSession, fullHeig
     return (
         <GlassCard glowColor="bg-purple-500/10" fullHeight={fullHeight}>
             <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Quick Focus</h3>
+ <h3 className="text-xl font-black text-white uppercase tracking-tighter">Quick Focus</h3>
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest opacity-50">Last: {lastSession ? lastSession.planned_minutes : 25}min {lastSession?.type || 'pomodoro'}</span>
             </div>
 

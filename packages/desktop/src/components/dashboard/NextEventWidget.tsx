@@ -77,7 +77,7 @@ export default function NextEventWidget({ tasks, habits }: NextEventWidgetProps)
             </div>
 
             <div className="flex items-center justify-between mt-6">
-                <h4 className="text-2xl font-black text-white tracking-tighter uppercase italic truncate max-w-[400px]">
+ <h4 className="text-2xl font-black text-white tracking-tighter uppercase truncate max-w-[400px]">
                     {nextEvent.title}
                 </h4>
 

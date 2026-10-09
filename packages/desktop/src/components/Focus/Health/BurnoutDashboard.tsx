@@ -79,7 +79,7 @@ export function BurnoutDashboard() {
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                                 <motion.span
-                                    className="text-5xl font-black text-white italic"
+ className="text-5xl font-black text-white "
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                     transition={{ delay: 0.5, type: 'spring' }}
@@ -95,7 +95,7 @@ export function BurnoutDashboard() {
                         {/* Main Character Status Card */}
                         <div className="w-full bg-white/5 rounded-2xl p-4 border border-white/10 text-center">
                             <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1">Status: Healthy Person</div>
-                            <h2 className="text-xl font-black text-white italic uppercase tracking-wider mb-3">
+ <h2 className="text-xl font-black text-white uppercase tracking-wider mb-3">
                                 Agent Emi
                             </h2>
                             <div className="flex justify-center gap-3">

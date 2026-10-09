@@ -127,7 +127,7 @@ export function LifeDashboard({ onSelectArea }: LifeDashboardProps) {
                             <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-2 group-hover:text-indigo-300 transition-colors">
                                 {area.name}
                             </h3>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] line-clamp-1 italic">
+ <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] line-clamp-1 ">
                                 {area.identity_statement || 'I AM EVOLVING'}
                             </p>
                         </div>

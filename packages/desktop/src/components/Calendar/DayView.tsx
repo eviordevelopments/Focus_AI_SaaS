@@ -213,7 +213,7 @@ export default function DayView({ date, tasks, habits, onTimeClick, onEventClick
                                     </div>
                                 )}
                                 {selectedTask.description && (
-                                    <p className="text-xs text-gray-400 leading-relaxed italic border-l-2 border-white/10 pl-2">
+ <p className="text-xs text-gray-400 leading-relaxed border-l-2 border-white/10 pl-2">
                                         {selectedTask.description}
                                     </p>
                                 )}

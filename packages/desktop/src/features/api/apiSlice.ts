@@ -18,6 +18,10 @@ export interface Task {
     links?: string; // JSON string
     color?: string;
     session_config?: string; // JSON string
+    is_habit?: boolean;
+    is_system?: boolean;
+    original_id?: string;
+    habit_type?: string;
 }
 
 export interface Area {
@@ -64,7 +68,7 @@ export interface Workflow {
 export const apiSlice = createApi({
     reducerPath: 'api',
     baseQuery: fetchBaseQuery({
-        baseUrl: (import.meta.env.VITE_API_URL || '') + '/api',
+        baseUrl: (import.meta.env.VITE_API_URL || 'http://localhost:4000') + '/api',
     }),
     tagTypes: ['Task', 'Area', 'Session', 'Health', 'Learning', 'Log', 'System', 'Review', 'Identity', 'Streak', 'Achievement', 'Burnout', 'Habit', 'Eisenhower', 'Deck', 'Project', 'Resource', 'Reference', 'User', 'Workflow', 'WorkflowRun', 'Tree', 'Asset'],
 
@@ -573,7 +577,7 @@ export const apiSlice = createApi({
             })
         }),
         // AI Agent
-        sendMessage: builder.mutation<{ reply: string }, { message: string }>({
+        sendMessage: builder.mutation<{ reply: string }, { message: string, model?: string }>({
             query: (body) => ({
                 url: '/agent/chat',
                 method: 'POST',

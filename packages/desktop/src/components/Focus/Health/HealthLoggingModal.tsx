@@ -71,8 +71,8 @@ export function HealthLoggingModal({ onClose, initialData }: HealthLoggingModalP
                             <div className="inline-flex p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 mb-2">
                                 <Activity size={24} />
                             </div>
-                            <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic">Biometric Sync</h2>
-                            <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase italic flex items-center gap-2">
+ <h2 className="text-3xl font-black text-white tracking-tighter uppercase ">Biometric Sync</h2>
+ <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase flex items-center gap-2">
                                 <Calendar size={12} className="text-emerald-500" />
                                 Protocol Date: {form.date}
                             </p>
@@ -103,7 +103,7 @@ export function HealthLoggingModal({ onClose, initialData }: HealthLoggingModalP
                                             </div>
                                             <label className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{s.label}</label>
                                         </div>
-                                        <span className="text-xl font-black text-white italic">
+ <span className="text-xl font-black text-white ">
                                             {form[s.key as key_of_form]} {s.unit}
                                         </span>
                                     </div>

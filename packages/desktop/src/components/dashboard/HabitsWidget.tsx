@@ -27,7 +27,7 @@ export default function HabitsWidget({ habits, onToggle, onViewDetails, classNam
         <GlassCard className={className}>
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Today's Quests</h3>
+ <h3 className="text-xl font-black text-white uppercase tracking-tighter">Today's Quests</h3>
                     <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mt-1">Daily Bounty</p>
                 </div>
                 <div className="text-right">
@@ -37,7 +37,7 @@ export default function HabitsWidget({ habits, onToggle, onViewDetails, classNam
 
             <div className="space-y-4">
                 {habits.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-12 opacity-30 italic">
+ <div className="flex flex-col items-center justify-center py-12 opacity-30 ">
                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">No quests initialized</span>
                     </div>
                 )}

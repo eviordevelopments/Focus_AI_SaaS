@@ -6,6 +6,9 @@ module.exports = {
     ],
     theme: {
         extend: {
+            fontFamily: {
+                sans: ['Copernicus', 'sans-serif'],
+            },
             colors: {
                 glass: {
                     100: 'rgba(255, 255, 255, 0.1)',
@@ -18,5 +21,5 @@ module.exports = {
             }
         },
     },
-    plugins: [],
+    plugins: [require('@tailwindcss/typography')],
 }

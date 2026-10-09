@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { useAddTaskMutation, useUpdateTaskMutation, useDeleteTaskMutation, useCreateHabitMutation, useGetAreasQuery } from '../../features/api/apiSlice';
+import { useAddTaskMutation, useUpdateTaskMutation, useDeleteTaskMutation, useCreateHabitMutation, useGetAreasQuery, useDeleteHabitMutation } from '../../features/api/apiSlice';
 import { Trash2, X, Calendar as CalIcon, Clock, Repeat, MapPin, Link as LinkIcon, Zap, Check } from 'lucide-react';
+import GlassModal from '../ui/GlassModal';
 
 interface EventModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
     const [updateTask] = useUpdateTaskMutation();
     const [deleteTask] = useDeleteTaskMutation();
     const [createHabit] = useCreateHabitMutation();
+    const [deleteHabit] = useDeleteHabitMutation();
     const { data: areas = [] } = useGetAreasQuery();
 
     const [eventType, setEventType] = useState<'task' | 'habit'>('task');
@@ -50,7 +52,7 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                 const s = getSafeDate(editingTask.start_time) || d;
                 const e = getSafeDate(editingTask.end_time) || new Date(s.getTime() + 60 * 60 * 1000);
 
-                let recurringDays = [];
+                let recurringDays: string[] = [];
                 try {
                     if (editingTask.recurring_days) {
                         recurringDays = typeof editingTask.recurring_days === 'string'
@@ -196,12 +198,19 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
 
     const handleDelete = async () => {
         if (!editingTask) return;
-        if (confirm(`Permanently remove event "${editingTask.title}"?`)) {
+        // Check if it's a habit or task
+        const isHabit = editingTask.habit_type || eventType === 'habit';
+        const title = editingTask.title || editingTask.name || 'this event';
+        if (confirm(`Permanently remove ${isHabit ? 'habit' : 'event'} "${title}"?`)) {
             try {
-                await deleteTask(editingTask.id).unwrap();
+                if (isHabit) {
+                    await deleteHabit(editingTask.id).unwrap();
+                } else {
+                    await deleteTask(editingTask.id).unwrap();
+                }
                 onClose();
             } catch (err) {
-                alert("Failed to delete event.");
+                alert(`Failed to delete ${isHabit ? 'habit' : 'event'}.`);
             }
         }
     };
@@ -220,39 +229,40 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
     ];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-2xl bg-[#1a1b26] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <GlassModal isOpen={isOpen} maxWidth="4xl">
 
                 {/* Header */}
-                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                    <div className="flex gap-4">
+                <div className="flex justify-between items-center mb-8 px-2">
+                    <div className="flex p-1 bg-white/5 border border-white/10 rounded-full">
                         <button
                             onClick={() => setEventType('task')}
-                            className={`text-xl font-bold transition-all ${eventType === 'task' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
+                            className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${eventType === 'task' ? 'bg-white/10 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
                         >
-                            New Task
+                            Task
                         </button>
                         <button
                             onClick={() => setEventType('habit')}
-                            className={`text-xl font-bold transition-all ${eventType === 'habit' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
+                            className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${eventType === 'habit' ? 'bg-white/10 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
                         >
-                            New Habit
+                            Habit
                         </button>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-                        <X size={24} />
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-all">
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-6">
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 px-8 pr-10">
 
                     {/* Title input */}
                     <div>
                         <input
                             type="text"
                             placeholder={eventType === 'task' ? "Add generic title, e.g., 'Deep Work Session'" : "Habit name, e.g., 'Daily Meditation'"}
-                            className="w-full bg-transparent text-3xl font-bold text-white placeholder-gray-600 border-none focus:outline-none focus:ring-0 p-0 outline-none shadow-none"
+                            className="w-full bg-transparent text-3xl font-bold text-white placeholder-white/30 border-none focus:outline-none focus:ring-0 p-0 outline-none shadow-none"
                             value={formData.title}
                             onChange={e => handleChange('title', e.target.value)}
                             autoFocus
@@ -260,33 +270,33 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                     </div>
 
                     {/* Time & Date */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-black/20 rounded-xl border border-white/5">
-                        <div className="space-y-4">
-                            <label className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-                                <CalIcon size={16} /> Date
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-white/5 rounded-3xl border border-white/10">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
+                                <CalIcon size={14} /> Date
                             </label>
                             <input
                                 type="date"
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-white/20 transition-all"
                                 value={formData.date}
                                 onChange={e => handleChange('date', e.target.value)}
                             />
                         </div>
-                        <div className="space-y-4">
-                            <label className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-                                <Clock size={16} /> Time
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
+                                <Clock size={14} /> Time
                             </label>
                             <div className="flex gap-2">
                                 <input
                                     type="time"
-                                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-white/20 transition-all"
                                     value={formData.startTime}
                                     onChange={e => handleChange('startTime', e.target.value)}
                                 />
-                                <span className="text-white self-center">-</span>
+                                <span className="text-white/50 self-center">-</span>
                                 <input
                                     type="time"
-                                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-white/20 transition-all"
                                     value={formData.endTime}
                                     onChange={e => handleChange('endTime', e.target.value)}
                                 />
@@ -297,12 +307,12 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                     {/* Recurrence */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-                                <Repeat size={16} /> Repeat
+                            <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
+                                <Repeat size={14} /> Repeat
                             </label>
                             <button
                                 onClick={() => handleChange('isRecurring', !formData.isRecurring)}
-                                className={`w-10 h-6 rounded-full p-1 transition-colors ${formData.isRecurring ? 'bg-indigo-500' : 'bg-gray-700'}`}
+                                className={`w-10 h-6 rounded-full p-1 transition-colors ${formData.isRecurring ? 'bg-indigo-500' : 'bg-white/10'}`}
                             >
                                 <div className={`w-4 h-4 bg-white rounded-full transition-transform ${formData.isRecurring ? 'translate-x-4' : ''}`} />
                             </button>
@@ -337,25 +347,25 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                     {eventType === 'task' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-                                    <MapPin size={16} /> Location
+                                <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
+                                    <MapPin size={14} /> Location
                                 </label>
                                 <input
                                     type="text"
                                     placeholder="Add location"
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder-white/30 focus:outline-none focus:border-white/20 transition-all"
                                     value={formData.location}
                                     onChange={e => handleChange('location', e.target.value)}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-                                    <LinkIcon size={16} /> Links
+                                <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
+                                    <LinkIcon size={14} /> Links
                                 </label>
                                 <input
                                     type="text"
                                     placeholder="Add links (e.g. Zoom, Docs)"
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder-white/30 focus:outline-none focus:border-white/20 transition-all"
                                     value={formData.links}
                                     onChange={e => handleChange('links', e.target.value)}
                                 />
@@ -365,21 +375,21 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm text-gray-400 font-medium">The Cue (Trigger)</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">The Cue (Trigger)</label>
                                     <input
                                         type="text"
                                         placeholder="After I..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder-white/30 focus:outline-none focus:border-white/20 transition-all"
                                         value={formData.cue}
                                         onChange={e => handleChange('cue', e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm text-gray-400 font-medium">The Reward</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">The Reward</label>
                                     <input
                                         type="text"
                                         placeholder="Then I feel..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder-white/30 focus:outline-none focus:border-white/20 transition-all"
                                         value={formData.reward}
                                         onChange={e => handleChange('reward', e.target.value)}
                                     />
@@ -387,21 +397,21 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm text-gray-400 font-medium">Protocol (Hard Version)</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">Protocol (Hard Version)</label>
                                     <input
                                         type="text"
                                         placeholder="100% effort..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder-white/30 focus:outline-none focus:border-white/20 transition-all"
                                         value={formData.routine_hard}
                                         onChange={e => handleChange('routine_hard', e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm text-gray-400 font-medium">Protocol (Easy Version)</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">Protocol (Easy Version)</label>
                                     <input
                                         type="text"
                                         placeholder="Min viable..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder-white/30 focus:outline-none focus:border-white/20 transition-all"
                                         value={formData.routine_easy}
                                         onChange={e => handleChange('routine_easy', e.target.value)}
                                     />
@@ -411,9 +421,9 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                     )}
 
                     {/* Life Area Selection */}
-                    <div className="space-y-3">
-                        <label className="text-sm text-gray-400 font-medium">Life Area</label>
-                        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                    <div className="space-y-3 px-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">Life Area</label>
+                        <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
                             {areas.map(a => (
                                 <button
                                     key={a.id}
@@ -422,23 +432,25 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                                         handleChange('areaId', a.id);
                                     }}
                                     className={`
-                                        h-12 rounded-lg opacity-70 hover:opacity-100 transition-all border-2 flex items-center justify-center
-                                        ${formData.areaId === a.id ? 'border-white scale-[1.05] opacity-100 shadow-xl' : 'border-transparent'}
+                                        h-12 rounded-xl backdrop-blur-md transition-all border-2 flex items-center justify-center overflow-hidden relative group
+                                        ${formData.areaId === a.id ? 'border-white scale-[1.05] shadow-[0_0_20px_rgba(255,255,255,0.2)] text-white' : 'border-transparent opacity-80 hover:opacity-100 text-white/90 hover:text-white'}
                                     `}
-                                    style={{ backgroundColor: a.color_hex }}
+                                    style={{ 
+                                        backgroundColor: formData.areaId === a.id ? a.color_hex : `${a.color_hex}80`,
+                                    }}
                                     title={a.name}
                                 >
-                                    <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate px-1">{a.name}</span>
+                                    <span className="text-[9px] font-black uppercase tracking-[0.15em] truncate px-2 relative z-10">{a.name}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {/* Deep Work Integration */}
-                    <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-4">
+                    <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4">
                         <div className="flex items-center justify-between">
-                            <label className="flex items-center gap-2 text-sm text-indigo-300 font-bold">
-                                <Zap size={16} /> Focus Session Config
+                            <label className="text-[10px] font-black uppercase tracking-widest text-indigo-300 flex items-center gap-2">
+                                <Zap size={14} /> Focus Session Config
                             </label>
                         </div>
                         <div className="flex gap-2">
@@ -471,12 +483,12 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-white/10 bg-black/20 flex justify-between items-center bg-white/5">
+                <div className="pt-6 mt-4 flex justify-between items-center">
                     <div>
                         {editingTask && !editingTask.id.startsWith('ext-') && (
                             <button
                                 onClick={handleDelete}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-all font-bold text-xs"
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-red-500/20 text-red-500 rounded-full transition-all font-bold text-xs"
                             >
                                 <Trash2 size={16} />
                                 Delete
@@ -486,21 +498,20 @@ export default function EventModal({ isOpen, onClose, initialDate, initialStartT
                     <div className="flex gap-3">
                         <button
                             onClick={onClose}
-                            className="px-6 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors font-medium"
+                            className="px-6 py-2.5 rounded-[2rem] border border-white/10 bg-[#0f1015] hover:bg-[#16171d] text-white transition-colors text-sm font-medium"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleSubmit}
                             disabled={!formData.title}
-                            className="px-8 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all transform disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-8 py-2.5 rounded-[2rem] bg-[#8d929f] hover:bg-[#a1a6b4] text-black transition-colors text-sm font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {editingTask ? 'Update Protocol' : `Create ${eventType === 'task' ? 'Event' : 'Habit'}`}
+                            Save
                         </button>
                     </div>
                 </div>
 
-            </div>
-        </div>
+        </GlassModal>
     );
 }

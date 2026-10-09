@@ -78,7 +78,7 @@ function BookCard({ book }: { book: any }) {
 
             <div className="p-6 space-y-4">
                 <div className="space-y-1">
-                    <h4 className="text-sm font-black text-white leading-tight line-clamp-2 uppercase italic">{book.title}</h4>
+ <h4 className="text-sm font-black text-white leading-tight line-clamp-2 uppercase ">{book.title}</h4>
                     <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{book.author || 'Unknown Author'}</p>
                 </div>
 

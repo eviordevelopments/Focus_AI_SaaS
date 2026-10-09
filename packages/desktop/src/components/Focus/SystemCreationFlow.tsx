@@ -100,7 +100,7 @@ export function SystemCreationFlow({ onClose, lifeAreaId, areas, editingId, init
                                 <Zap size={24} />
                             </div>
                             <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{editingId ? 'Refine System' : 'Initialize System'}</h2>
-                            <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase italic flex items-center gap-2">
+ <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase flex items-center gap-2">
                                 <Target size={12} className="text-indigo-500" />
                                 Forging in {area?.name || 'Unknown Area'}
                             </p>
@@ -130,7 +130,7 @@ export function SystemCreationFlow({ onClose, lifeAreaId, areas, editingId, init
                                         >
                                             <option value="" className="bg-[#0c0c0e] text-gray-400">Select Core Identity...</option>
                                             {identities.map((identity: any) => (
-                                                <option key={identity.id} value={identity.id} className="bg-[#0c0c0e] text-white italic">
+ <option key={identity.id} value={identity.id} className="bg-[#0c0c0e] text-white ">
                                                     {identity.primary_identity} ({identity.quarter} {identity.year})
                                                 </option>
                                             ))}

@@ -68,7 +68,7 @@ export function TaskSelectionModal({ isOpen, onClose, onSelect }: TaskSelectionM
                             </button>
                         ))
                     ) : (
-                        <div className="py-10 text-center text-gray-500 text-xs italic">No matching tasks found</div>
+ <div className="py-10 text-center text-gray-500 text-xs ">No matching tasks found</div>
                     )}
                 </div>
             </div>

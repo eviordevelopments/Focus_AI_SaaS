@@ -72,7 +72,7 @@ export function ProjectCreationFlow({ onClose, lifeAreaId, areas, editingId, ini
                                 <Rocket size={24} />
                             </div>
                             <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{editingId ? 'Refine Mission' : 'Launch Project'}</h2>
-                            <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase italic flex items-center gap-2">
+ <p className="text-gray-500 text-[10px] font-black tracking-[0.3em] uppercase flex items-center gap-2">
                                 <Layers size={12} className="text-emerald-500" />
                                 Assigned to {area?.name || 'Unknown Area'}
                             </p>

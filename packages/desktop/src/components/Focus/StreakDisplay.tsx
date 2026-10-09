@@ -71,7 +71,7 @@ export function StreakDisplay({ currentStreak, bestStreak, isOnFire = true }: St
                     <Shield size={12} />
                     <span className="font-bold uppercase tracking-widest">Streak Freeze Active</span>
                 </div>
-                <span className="text-gray-500 italic">One-day protection</span>
+ <span className="text-gray-500 ">One-day protection</span>
             </div>
         </div>
     );

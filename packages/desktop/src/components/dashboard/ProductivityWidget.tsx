@@ -21,7 +21,7 @@ export default function ProductivityWidget({ focusMinutes, tasksCompleted, strea
     return (
         <GlassCard fullHeight={fullHeight}>
             <div className="flex justify-between items-start mb-8">
-                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Productivity</h3>
+ <h3 className="text-xl font-black text-white uppercase tracking-tighter">Productivity</h3>
                 <div className="flex items-center gap-2 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20 shadow-lg shadow-amber-500/5">
                     <span className="text-sm">🔥</span>
                     <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">{streak} days</span>

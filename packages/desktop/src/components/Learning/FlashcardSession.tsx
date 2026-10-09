@@ -57,7 +57,7 @@ export function FlashcardSession({ deckId, cards, onComplete }: { deckId: string
                     <RateButton label="Easy" color="bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/40" onClick={() => handleRate(5)} />
                 </div>
             ) : (
-                <div className="h-14 flex items-center text-gray-500 italic">
+ <div className="h-14 flex items-center text-gray-500 ">
                     <Repeat className="mr-2" size={16} /> Flip card to rate
                 </div>
             )}

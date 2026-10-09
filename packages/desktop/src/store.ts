@@ -4,6 +4,8 @@ import authReducer from './features/auth/authSlice';
 import uiReducer from './features/ui/uiSlice';
 import themeReducer from './features/theme/themeSlice';
 import timerReducer from './features/timer/timerSlice';
+import notesReducer from './features/notes/notesSlice';
+import dashboardReducer from './features/ui/dashboardSlice';
 
 export const store = configureStore({
     reducer: {
@@ -12,6 +14,8 @@ export const store = configureStore({
         ui: uiReducer,
         theme: themeReducer,
         timer: timerReducer,
+        notes: notesReducer,
+        dashboard: dashboardReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(apiSlice.middleware),

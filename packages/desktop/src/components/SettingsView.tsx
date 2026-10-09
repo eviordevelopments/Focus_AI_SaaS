@@ -6,6 +6,7 @@ import { RootState } from '../store';
 import { setThemeMode } from '../features/theme/themeSlice';
 import GlassCard from './ui/GlassCard';
 import { User, Mail, Shield, Palette, Accessibility, Save, LogOut, Camera, Globe, Trophy, Zap, Target, Star, Lock, Activity } from 'lucide-react';
+import { setStaticBackground } from '../features/ui/uiSlice';
 
 export const SettingsView = () => {
     const { data: profile, isLoading } = useGetProfileQuery();
@@ -13,6 +14,7 @@ export const SettingsView = () => {
     const [updateProfile] = useUpdateProfileMutation();
     const [resetPassword] = useResetPasswordMutation();
     const { mode: themeMode } = useSelector((state: RootState) => state.theme);
+    const { staticBackground } = useSelector((state: RootState) => state.ui);
     const dispatch = useDispatch();
 
     const [formData, setFormData] = useState({
@@ -73,7 +75,7 @@ export const SettingsView = () => {
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <header className="flex justify-between items-end mb-12">
                 <div>
-                    <h1 className="text-5xl font-black italic uppercase tracking-tighter text-[var(--text-heading)]">System Settings</h1>
+ <h1 className="text-5xl font-black uppercase tracking-tighter text-[var(--text-heading)]">System Settings</h1>
                     <p className="text-[var(--text-dim)] font-bold uppercase tracking-[0.2em] text-[10px] mt-2">Personalize your high-performance environment</p>
                 </div>
                 <button
@@ -106,7 +108,7 @@ export const SettingsView = () => {
                                 </label>
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-[var(--text-heading)]">{profile?.name}</h3>
+ <h3 className="text-2xl font-black uppercase tracking-tighter text-[var(--text-heading)]">{profile?.name}</h3>
                                 <p className="text-blue-400 font-bold text-xs uppercase tracking-widest">{profile?.username || '@focus_agent'}</p>
                             </div>
                         </div>
@@ -129,7 +131,7 @@ export const SettingsView = () => {
                     </GlassCard>
 
                     <GlassCard>
-                        <h3 className="text-xl font-black italic uppercase tracking-tighter text-[var(--text-heading)] mb-6">Security & Identity</h3>
+ <h3 className="text-xl font-black uppercase tracking-tighter text-[var(--text-heading)] mb-6">Security & Identity</h3>
                         <div className="space-y-4">
                             <div className="p-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--glass-border)] flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -200,7 +202,7 @@ export const SettingsView = () => {
                     <GlassCard>
                         <div className="flex items-center gap-3 mb-8">
                             <Star size={20} className="text-amber-400" />
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Identity Matrix</h3>
+ <h3 className="text-xl font-black uppercase tracking-tighter text-white">Identity Matrix</h3>
                         </div>
                         <div className="space-y-6">
                             <Stat label="Current Level" value={`LVL ${stats?.level || 1}`} icon={<Zap size={14} className="text-indigo-400" />} />
@@ -211,7 +213,7 @@ export const SettingsView = () => {
                             <div className="pt-4 border-t border-white/5">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Overall Progress</span>
-                                    <span className="text-xs font-black text-white italic">{stats?.avgProgress || 0}%</span>
+ <span className="text-xs font-black text-white ">{stats?.avgProgress || 0}%</span>
                                 </div>
                                 <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                                     <div
@@ -226,7 +228,7 @@ export const SettingsView = () => {
                     <GlassCard>
                         <div className="flex items-center gap-3 mb-6">
                             <Palette size={20} className="text-indigo-400" />
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Environment Appearance</h3>
+ <h3 className="text-xl font-black uppercase tracking-tighter text-white">Environment Appearance</h3>
                         </div>
                         <div className="space-y-4">
                             <div className="space-y-2">
@@ -244,14 +246,18 @@ export const SettingsView = () => {
                                 </div>
                             </div>
                             <Toggle label="Glassmorphic Effects" enabled={true} />
-                            <Toggle label="Dynamic Background Blobs" enabled={true} />
+                            <Toggle 
+                                label="Dynamic Background Animation" 
+                                enabled={!staticBackground} 
+                                onChange={() => dispatch(setStaticBackground(!staticBackground))} 
+                            />
                         </div>
                     </GlassCard>
 
                     <GlassCard>
                         <div className="flex items-center gap-3 mb-6">
                             <Accessibility size={20} className="text-emerald-400" />
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Accessibility</h3>
+ <h3 className="text-xl font-black uppercase tracking-tighter text-white">Accessibility</h3>
                         </div>
                         <div className="space-y-4">
                             <Toggle label="Reduce Motion" enabled={false} />
@@ -294,10 +300,10 @@ const TextArea = ({ label, value, onChange, placeholder }: { label: string, valu
     </div>
 );
 
-const Toggle = ({ label, enabled }: any) => (
-    <div className="flex items-center justify-between p-3 bg-white/[0.03] rounded-xl border border-white/5">
+const Toggle = ({ label, enabled, onChange }: any) => (
+    <div className="flex items-center justify-between p-3 bg-white/[0.03] rounded-xl border border-white/5 cursor-pointer hover:bg-white/5 transition-all" onClick={onChange}>
         <span className="text-[11px] font-bold text-gray-300">{label}</span>
-        <div className={`w-10 h-5 rounded-full relative transition-all duration-300 cursor-pointer ${enabled ? 'bg-blue-600' : 'bg-white/10'}`}>
+        <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${enabled ? 'bg-blue-600' : 'bg-white/10'}`}>
             <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all duration-300 ${enabled ? 'left-6' : 'left-1'}`} />
         </div>
     </div>
@@ -311,6 +317,6 @@ const Stat = ({ label, value, icon }: any) => (
             </div>
             <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">{label}</span>
         </div>
-        <span className="text-xs font-bold text-white tabular-nums italic">{value}</span>
+ <span className="text-xs font-bold text-white tabular-nums ">{value}</span>
     </div>
 );

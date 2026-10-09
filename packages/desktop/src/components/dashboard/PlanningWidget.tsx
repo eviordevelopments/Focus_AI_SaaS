@@ -39,7 +39,7 @@ export function PlanningWidget() {
             <div className="flex justify-between items-start mb-8">
                 <div>
                     <label className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] block mb-2">{currentQuarter} Identity</label>
-                    <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic line-clamp-1 group-hover:text-indigo-100 transition-colors">{currentShift.primary_identity}</h3>
+ <h3 className="text-3xl font-black text-white tracking-tighter uppercase line-clamp-1 group-hover:text-indigo-100 transition-colors">{currentShift.primary_identity}</h3>
                 </div>
                 <div className="p-3 bg-indigo-500/20 rounded-2xl border border-indigo-500/20 shadow-lg shadow-indigo-500/10 group-hover:scale-110 transition-transform duration-500">
                     <Zap size={20} className="text-indigo-400 fill-current" />
@@ -50,7 +50,7 @@ export function PlanningWidget() {
                 <div className="space-y-3">
                     <div className="flex justify-between items-end">
                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Shift Progression</span>
-                        <span className="text-sm font-black text-white italic">{totalProgress}%</span>
+ <span className="text-sm font-black text-white ">{totalProgress}%</span>
                     </div>
                     <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
                         <motion.div
@@ -70,7 +70,7 @@ export function PlanningWidget() {
                         </div>
                     ))}
                     {outcomes.length === 0 && (
-                        <p className="text-[10px] text-gray-600 italic font-bold">No strategic objectives defined.</p>
+ <p className="text-[10px] text-gray-600 font-bold">No strategic objectives defined.</p>
                     )}
                 </div>
             </div>
